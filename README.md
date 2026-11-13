@@ -55,3 +55,5 @@ Run **Check_ORBIT.bat** to verify packages, artwork, audio output, SQLite and th
 ## Development
 
 See the [developer guide](DEVELOPMENT_GUIDE.md), [contribution guide](CONTRIBUTING.md), [changelog](CHANGELOG.md) and [upstream model sources and licences](MODEL_SOURCES.md).
+
+ORBIT Desktop is released under the [MIT License](LICENSE).

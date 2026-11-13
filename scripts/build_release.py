@@ -48,7 +48,7 @@ def build(tag, output):
             if object_type != "blob" or mode not in {"100644", "100755"}:
                 raise ValueError(f"Unsupported release entry {name}")
             paths[name] = object_id
-    required = (ROOT_FILES - {"LICENSE"}) | ASSETS | SCRIPTS | {"orbit/__init__.py"}
+    required = ROOT_FILES | ASSETS | SCRIPTS | {"orbit/__init__.py"}
     if missing := required - paths.keys():
         raise ValueError(f"Release is missing {', '.join(sorted(missing))}")
 
