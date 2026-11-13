@@ -1,0 +1,10 @@
+name: Feature request
+description: Suggest an improvement for ORBIT Desktop
+body:
+  - type: textarea
+    id: use_case
+    attributes:
+      label: What would you like to do?
+      description: Describe the use case and how you would expect ORBIT to behave.
+    validations:
+      required: true

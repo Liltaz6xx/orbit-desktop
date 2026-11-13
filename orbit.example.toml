@@ -1,0 +1,6 @@
+# Copy to %LOCALAPPDATA%\ORBIT Desktop\orbit.toml to change settings.
+[ollama]
+url = "http://127.0.0.1:11434"
+model = "qwen2.5:1.5b"
+timeout = 180
+max_tokens = 220

@@ -1,0 +1,23 @@
+name: Bug report
+description: Report an issue with ORBIT Desktop
+title: "[Bug] "
+body:
+  - type: textarea
+    id: behaviour
+    attributes:
+      label: What happened?
+      description: Describe what you expected and the steps to reproduce it.
+    validations:
+      required: true
+  - type: input
+    id: versions
+    attributes:
+      label: ORBIT, Windows and Python versions
+      placeholder: ORBIT 0.7.0-beta.1, Windows 11, Python 3.12
+    validations:
+      required: true
+  - type: textarea
+    id: diagnostics
+    attributes:
+      label: System check output
+      description: Remove personal paths and device identifiers before pasting. Keep databases and conversation text private.
