@@ -1,4 +1,4 @@
-name: Draft Windows release
+name: Publish Windows release
 
 on:
   push:
@@ -34,13 +34,12 @@ jobs:
         run: |
           $version = $env:GITHUB_REF_NAME.Substring(1)
           ./scripts/test_installer.ps1 -Installer "dist/ORBIT-Desktop-$version-Windows-x64-Setup.exe"
-      - name: Create draft release
+      - name: Publish as latest release
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           $release = $env:GITHUB_REF_NAME.Substring(1)
-          $arguments = @('release', 'create', $env:GITHUB_REF_NAME, '--verify-tag', '--draft',
+          $arguments = @('release', 'create', $env:GITHUB_REF_NAME, '--verify-tag', '--latest',
             '--title', "ORBIT Desktop $release", '--notes-file', 'RELEASE_NOTES.md')
-          if ($release.Contains('-')) { $arguments += '--prerelease' }
           $arguments += (Get-ChildItem dist -File).FullName
           gh @arguments

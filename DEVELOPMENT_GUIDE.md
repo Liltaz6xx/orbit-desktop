@@ -43,12 +43,12 @@ Run from the project directory:
 
 Tests use temporary SQLite databases, a loopback mock server, offscreen Qt and mocked Windows actions. The environment checker queries the real local services. Audio logs include synthesis duration, first audio latency and silence caused by late chunks.
 
-## Preparing a beta
+## Publishing a release
 
 The release workflow tests the tagged commit, builds the ZIP and installer,
-exercises the installer, and opens a draft GitHub Release. If the tag was
-pushed before GitHub registered the workflow, run **Draft Windows release**
-manually for that tag. Review the notes and checksums before publishing.
+exercises the installer, and publishes the build as the latest GitHub release.
+Review the release notes before pushing the tag. If the workflow did not start,
+run **Publish Windows release** manually for that tag.
 
 Build locally from a committed tree with Python 3.12 and Inno Setup 6.7.4:
 
