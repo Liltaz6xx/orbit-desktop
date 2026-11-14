@@ -8,17 +8,16 @@ $installerPath = (Resolve-Path -LiteralPath $Installer).Path
 $previousPath = if ($PreviousInstaller) { (Resolve-Path -LiteralPath $PreviousInstaller).Path } else { $installerPath }
 $work = Join-Path ([IO.Path]::GetTempPath()) "ORBIT Installer QA $([guid]::NewGuid().ToString('N'))"
 $appDir = Join-Path $work 'Installed copy'
-$profile = Join-Path $work 'User profile'
+$dataDir = Join-Path $env:LOCALAPPDATA 'ORBIT Desktop'
 $uninstallKey = 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Uninstall\{70E68F53-B09E-46C9-ACF6-ECE84F5861C8}_is1'
 $versionKey = 'HKCU:\Software\ORBIT Desktop'
 $desktop = Join-Path ([Environment]::GetFolderPath('DesktopDirectory')) 'ORBIT Desktop.lnk'
 $menu = Join-Path ([Environment]::GetFolderPath('Programs')) 'ORBIT Desktop'
 $installedVersion = (Get-ItemProperty -LiteralPath $versionKey -ErrorAction SilentlyContinue).InstallerVersion
-if ((Test-Path -LiteralPath $uninstallKey) -or $installedVersion -or
+if ((Test-Path -LiteralPath $uninstallKey) -or $installedVersion -or (Test-Path -LiteralPath $dataDir) -or
     (Test-Path -LiteralPath $desktop) -or (Test-Path -LiteralPath $menu)) {
-    throw 'Use a Windows account without an existing ORBIT Desktop installation or shortcuts.'
+    throw 'Use a Windows account without an existing ORBIT Desktop installation, profile or shortcuts.'
 }
-$windowsLocalAppData = $env:LOCALAPPDATA
 $qtPlatform = $env:QT_QPA_PLATFORM
 New-Item -ItemType Directory -Path $work | Out-Null
 
@@ -57,8 +56,6 @@ try {
     $appFile = Join-Path $appDir 'main.py'
     Add-Content -LiteralPath $appFile -Value '# QA changed installed program file'
     $beforeHash = (Get-FileHash -LiteralPath $appFile).Hash
-    $env:LOCALAPPDATA = $profile
-    $env:QT_QPA_PLATFORM = 'offscreen'
     $python = Join-Path (Split-Path -Parent $desktopLink.TargetPath) 'python.exe'
     Push-Location -LiteralPath $appDir
     try {
@@ -73,20 +70,14 @@ MemoryStore(DATABASE_PATH).save_memory("The upgrade preserves this memory")
         if ($LASTEXITCODE -ne 0) { throw 'Could not create the QA profile.' }
     } finally { Pop-Location }
 
-    $dataDir = Join-Path $profile 'ORBIT Desktop'
     $memoryFile = Join-Path $dataDir 'orbit_memory.sqlite3'
     $settingsFile = Join-Path $dataDir 'orbit.toml'
     $memoryHash = (Get-FileHash -LiteralPath $memoryFile).Hash
     $settingsHash = (Get-FileHash -LiteralPath $settingsFile).Hash
     $voice = Join-Path $dataDir 'voice'
-    New-Item -ItemType Directory -Path $voice | Out-Null
+    New-Item -ItemType Directory -Path $voice -Force | Out-Null
     $voiceMarker = Join-Path $voice 'voice-test.marker'
     Set-Content -LiteralPath $voiceMarker -Value 'QA voice cache marker'
-    # Restore the actual installer environment. The synthetic application profile
-    # was used only by the Python process.
-    $env:LOCALAPPDATA = $windowsLocalAppData
-    $env:QT_QPA_PLATFORM = $qtPlatform
-
     $upgradeLog = Invoke-Setup $installerPath 'upgrade'
     if ((Get-FileHash -LiteralPath $appFile).Hash -eq $beforeHash) { throw 'Upgrade did not replace the existing files.' }
     if (-not (Select-String -LiteralPath $upgradeLog -Pattern 'Reusing the verified ORBIT runtime' -Quiet)) {
@@ -106,14 +97,28 @@ MemoryStore(DATABASE_PATH).save_memory("The upgrade preserves this memory")
         (Get-FileHash -LiteralPath $settingsFile).Hash -ne $settingsHash) {
         throw 'Upgrade changed the user profile.'
     }
-    $env:LOCALAPPDATA = $profile
     $env:QT_QPA_PLATFORM = 'offscreen'
     Push-Location -LiteralPath $appDir
     try {
-        & $python -s -E -B -c "from PySide6.QtCore import QTimer; from PySide6.QtWidgets import QApplication; from orbit.window import OrbitWindow; from orbit.config import load_settings; app=QApplication([]); win=OrbitWindow(load_settings()); win.show(); QTimer.singleShot(400, win.close); app.exec()"
+        $smoke = @'
+from PySide6.QtCore import QTimer
+from PySide6.QtWidgets import QApplication
+from orbit.config import load_settings
+from orbit.voice import OrbitVoice
+from orbit.window import OrbitWindow
+
+samples, rate = OrbitVoice().synthesize("ORBIT is ready.")
+if not len(samples) or rate != 24000:
+    raise SystemExit("The installed Kokoro voice did not produce 24 kHz audio.")
+app = QApplication([])
+win = OrbitWindow(load_settings())
+win.show()
+QTimer.singleShot(400, win.close)
+raise SystemExit(app.exec())
+'@
+        $smoke | & $python -s -E -B -
         if ($LASTEXITCODE -ne 0) { throw 'The installed application failed its startup smoke test.' }
     } finally { Pop-Location }
-    $env:LOCALAPPDATA = $windowsLocalAppData
     $env:QT_QPA_PLATFORM = $qtPlatform
 
     $uninstall = Join-Path $appDir 'unins000.exe'
@@ -126,12 +131,11 @@ MemoryStore(DATABASE_PATH).save_memory("The upgrade preserves this memory")
         (Get-FileHash -LiteralPath $settingsFile).Hash -ne $settingsHash) {
         throw 'Uninstall removed or changed the user profile.'
     }
-    Write-Host "Verified fresh install, default shortcuts, in-place upgrade, runtime reuse, startup and uninstall. Logs: $work"
+    Write-Host "Verified fresh install, default shortcuts, in-place upgrade, dependency reuse, Kokoro synthesis, startup and uninstall. Logs: $work"
 } finally {
-    $env:LOCALAPPDATA = $windowsLocalAppData
     $env:QT_QPA_PLATFORM = $qtPlatform
     $uninstall = Join-Path $appDir 'unins000.exe'
-    if (Test-Path -LiteralPath $uninstall) {
+    if ((Test-Path -LiteralPath $uninstallKey) -and (Test-Path -LiteralPath $uninstall)) {
         $null = Invoke-Setup $uninstall 'cleanup'
     }
 }
