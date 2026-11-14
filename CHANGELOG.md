@@ -1,6 +1,6 @@
 # ORBIT changelog
 
-## 0.7.0-beta.3
+## 0.7.0-beta.4
 
 - Provision Ollama, Qwen2.5 1.5B, and Kokoro from the Windows installer.
 - Reuse installed dependencies and preserve the ORBIT and Ollama profiles.

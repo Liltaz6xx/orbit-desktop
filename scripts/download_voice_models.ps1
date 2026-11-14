@@ -5,6 +5,18 @@ $ErrorActionPreference = 'Stop'
 $ProgressPreference = 'SilentlyContinue'
 [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
 
+function Get-VoiceHash([string]$Path) {
+    $sha = [Security.Cryptography.SHA256]::Create()
+    $stream = [IO.File]::OpenRead($Path)
+    try {
+        return ([BitConverter]::ToString($sha.ComputeHash($stream))).Replace('-', '').ToLowerInvariant()
+    }
+    finally {
+        $stream.Dispose()
+        $sha.Dispose()
+    }
+}
+
 if ([string]::IsNullOrWhiteSpace($AssetsDirectory)) {
     $AssetsDirectory = Join-Path (Split-Path -Parent $PSScriptRoot) 'assets'
 }
@@ -28,7 +40,7 @@ $files = @(
 foreach ($file in $files) {
     $destination = Join-Path $AssetsDirectory $file.Name
     if (Test-Path -LiteralPath $destination -PathType Leaf) {
-        if ((Get-FileHash -LiteralPath $destination -Algorithm SHA256).Hash -eq $file.Sha256) {
+        if ((Get-VoiceHash $destination) -eq $file.Sha256) {
             Write-Host "Already present: $($file.Name)" -ForegroundColor Green
             continue
         }
@@ -42,7 +54,7 @@ foreach ($file in $files) {
         if ((Get-Item -LiteralPath $temp).Length -lt $file.MinSize) {
             throw "File is smaller than expected, so it may be incomplete."
         }
-        $actual = (Get-FileHash -LiteralPath $temp -Algorithm SHA256).Hash.ToLowerInvariant()
+        $actual = Get-VoiceHash $temp
         if ($actual -ne $file.Sha256) {
             throw "SHA-256 verification failed for $($file.Name). Expected $($file.Sha256); got $actual."
         }
