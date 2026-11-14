@@ -1,6 +1,8 @@
 """Minimal PySide6 interface for typed requests and spoken replies."""
 
 from itertools import count
+from concurrent.futures import Future
+from threading import Event, Thread
 from time import perf_counter
 import logging
 
@@ -12,13 +14,14 @@ from PySide6.QtWidgets import (
 )
 
 from .actions import ActionPermissions, WindowsController
-from .config import APP_VERSION, load_settings
+from .config import APP_VERSION, ROOT, load_settings
 from .discord_presence import APPLICATION_ID, DiscordPresence
 from .listener import VoiceListener
 from .models import AudioMeter, OrbitEvents, OrbitTurn
 from .preferences import Preferences, read_preferences
 from .settings_dialog import SettingsDialog
 from .theme import STYLESHEET, apply_window_frame
+from .updater import download_update, installed_copy, latest_update, launch_after_exit
 from .visuals import OrbitVisual
 from .workers import OrbitWorkers
 
@@ -54,6 +57,13 @@ class OrbitWindow(QWidget):
         self.listen_after_stop.timeout.connect(self.resume_listener)
         self.permissions = ActionPermissions()
         self.meter = AudioMeter()
+        self.update_job = None
+        self.installing_update = False
+        self.update_cancel = Event()
+        self.update_poll = QTimer(self, interval=150)
+        self.update_poll.timeout.connect(self.finish_update_job)
+        self.update_checks = QTimer(self, interval=60 * 60 * 1000)
+        self.update_checks.timeout.connect(self.check_for_update)
         self.events = OrbitEvents(self)
         self.events.subsystem.connect(self.on_subsystem)
         self.events.approval.connect(self.on_approval)
@@ -70,6 +80,9 @@ class OrbitWindow(QWidget):
                                     controller if controller is not None else WindowsController(), voice)
         self.workers.start()
         self.apply_preferences()
+        if installed_copy(ROOT) and QApplication.platformName() == "windows":
+            self.update_checks.start()
+            QTimer.singleShot(2000, self.check_for_update)
         if QApplication.platformName() == "windows":
             self.presence.start(APPLICATION_ID)
 
@@ -93,6 +106,9 @@ class OrbitWindow(QWidget):
         discord.setAccessibleName("Discord activity status")
         discord.clicked.connect(self.show_discord)
         header.addWidget(discord)
+        self.update_button = QPushButton("Update", objectName="Reply")
+        self.update_button.clicked.connect(lambda: self.check_for_update(manual=True))
+        header.addWidget(self.update_button)
         header.addSpacing(14)
         header.addWidget(QLabel(f"v{APP_VERSION}", objectName="Version"))
         root.addLayout(header)
@@ -193,7 +209,7 @@ class OrbitWindow(QWidget):
 
     def submit_message(self, message, *, from_microphone=False):
         message = message.strip()
-        if self.closing or self.turn is not None or not message:
+        if self.closing or self.installing_update or self.turn is not None or not message:
             return
         turn = OrbitTurn(next(TURN_IDS), message, preferences=self.preferences, from_microphone=from_microphone)
         self.turn = turn
@@ -345,6 +361,84 @@ class OrbitWindow(QWidget):
             self.detail.setText(self.ready_detail())
         self.resume_listener()
 
+    def start_update_job(self, label, function, finished):
+        future = Future()
+        self.update_job = (future, finished)
+        self.update_button.setText(label)
+        self.update_button.setEnabled(False)
+
+        def run():
+            try:
+                future.set_result(function())
+            except Exception as exc:
+                future.set_exception(exc)
+
+        Thread(target=run, name="ORBIT update", daemon=True).start()
+        self.update_poll.start()
+
+    def finish_update_job(self):
+        future, finished = self.update_job
+        if not future.done():
+            return
+        self.update_poll.stop()
+        self.update_job = None
+        self.update_button.setText("Update")
+        self.update_button.setEnabled(True)
+        finished(future)
+
+    def check_for_update(self, manual=False):
+        if self.closing or self.update_job is not None:
+            return
+        if manual and not installed_copy(ROOT):
+            QMessageBox.information(self, "ORBIT update", "Install ORBIT with Windows Setup to use in-app updates.")
+            return
+
+        def checked(future):
+            try:
+                update = future.result()
+            except Exception as exc:
+                log.warning("event=update_check_failed error=%s", type(exc).__name__)
+                if manual:
+                    QMessageBox.warning(self, "ORBIT update", "Could not check GitHub for an update. Try again later.")
+                return
+            if update is None:
+                if manual:
+                    QMessageBox.information(self, "ORBIT update", "You have the latest build.")
+                return
+            self.update_button.setText("Update available")
+            if manual:
+                self.confirm_update(update)
+
+        self.start_update_job("Checking…", lambda: latest_update(APP_VERSION), checked)
+
+    def confirm_update(self, update):
+        yes = QMessageBox.StandardButton.Yes
+        if self.turn is not None:
+            QMessageBox.information(self, "ORBIT update", "Finish or stop the current request to update.")
+            return
+        if QMessageBox.question(self, "ORBIT update",
+                                f"Install ORBIT {update.version}? ORBIT will close and reopen after the update.",
+                                yes | QMessageBox.StandardButton.No, QMessageBox.StandardButton.No) != yes:
+            return
+
+        def ready(future):
+            installer = None
+            try:
+                installer = future.result()
+                launch_after_exit(installer)
+            except Exception as exc:
+                self.installing_update = False
+                log.warning("event=update_install_failed error=%s", type(exc).__name__)
+                if installer is not None:
+                    installer.unlink(missing_ok=True)
+                    installer.parent.rmdir()
+                QMessageBox.warning(self, "ORBIT update", "Could not download or start the verified installer.")
+                return
+            self.close()
+
+        self.installing_update = True
+        self.start_update_job("Downloading…", lambda: download_update(update, self.update_cancel), ready)
+
     def show_settings(self):
         if self.settings_dialog is not None:
             self.settings_dialog.raise_()
@@ -411,6 +505,9 @@ class OrbitWindow(QWidget):
 
     def closeEvent(self, event):
         self.closing = True
+        self.update_checks.stop()
+        self.update_poll.stop()
+        self.update_cancel.set()
         self.listen_after_stop.stop()
         self.listener.stop()
         self.presence.stop()

@@ -1,5 +1,9 @@
 # ORBIT changelog
 
+## 0.7.0-beta.9
+
+- Check GitHub for updates and install verified Windows releases from the app.
+
 ## 0.7.0-beta.8
 
 - Add assistant name, voice and personality settings.

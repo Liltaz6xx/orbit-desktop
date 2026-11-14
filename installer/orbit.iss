@@ -56,6 +56,7 @@ Type: files; Name: "{userprograms}\ORBIT Desktop\Download Kokoro voice.lnk"
 
 [Run]
 Filename: "{code:EnvironmentPath}\Scripts\pythonw.exe"; Parameters: "-E -s -B ""{app}\main.py"""; WorkingDir: "{app}"; Description: "Launch ORBIT Desktop"; Flags: postinstall nowait skipifsilent
+Filename: "{code:EnvironmentPath}\Scripts\pythonw.exe"; Parameters: "-E -s -B ""{app}\main.py"""; WorkingDir: "{app}"; Flags: nowait; Check: WizardSilent and IsOrbitUpdate
 
 [Registry]
 Root: HKCU; Subkey: "Software\ORBIT Desktop"; ValueType: string; ValueName: "InstallerVersion"; ValueData: "{#WindowsVersion}"; Flags: uninsdeletekeyifempty uninsdeletevalue
@@ -77,6 +78,19 @@ const
 var
   Progress: TOutputMarqueeProgressWizardPage;
   Downloads: TDownloadWizardPage;
+
+function IsOrbitUpdate(): Boolean;
+var
+  I: Integer;
+begin
+  Result := False;
+  for I := 1 to ParamCount do
+    if CompareText(ParamStr(I), '/ORBITUPDATE') = 0 then
+    begin
+      Result := True;
+      Exit;
+    end;
+end;
 
 function InitializeSetup(): Boolean;
 var
