@@ -13,6 +13,7 @@ from pathlib import Path
 from unittest.mock import patch
 
 import orbit
+from orbit import config
 from orbit.ai import OllamaClient, OllamaError, parse_stream
 from orbit.config import CONFIG_PATH, DATABASE_PATH, PROFILE_DIR, ROOT, ConfigError, Settings, load_settings
 from orbit.models import Cancellation
@@ -47,6 +48,29 @@ class RuntimeTests(unittest.TestCase):
         self.assertEqual(DATABASE_PATH.parent, PROFILE_DIR)
         self.assertEqual(CONFIG_PATH.parent, PROFILE_DIR)
         self.assertFalse(DATABASE_PATH.is_relative_to(ROOT))
+
+    def test_voice_model_prefers_new_export_and_supports_old_cache(self):
+        with tempfile.TemporaryDirectory() as temp:
+            profile = Path(temp) / "profile"
+            voice = profile / "voice"
+            assets = Path(temp) / "assets"
+            voice.mkdir(parents=True)
+            assets.mkdir()
+            legacy = voice / config.LEGACY_VOICE_MODEL
+            library = voice / config.VOICE_LIBRARY
+            fast = assets / config.VOICE_MODEL
+            with patch.multiple(config, PROFILE_DIR=profile, ASSETS=assets):
+                legacy.touch()
+                library.touch()
+                self.assertEqual(config.voice_files(), (legacy, library))
+                fast.touch()
+                self.assertEqual(config.voice_files(), (legacy, library))
+                local_library = assets / config.VOICE_LIBRARY
+                local_library.touch()
+                self.assertEqual(config.voice_files(), (fast, local_library))
+                installed = voice / config.VOICE_MODEL
+                installed.touch()
+                self.assertEqual(config.voice_files(), (installed, library))
 
     def test_config_rejects_cloud_and_invalid_types(self):
         for kwargs in (
@@ -86,6 +110,14 @@ class RuntimeTests(unittest.TestCase):
         self.assertLessEqual(len(chunks[0]), 56)
         rest = speech.feed(" of different sizes.") + speech.flush()
         self.assertEqual(" ".join(chunks + rest), opening + "craters of different sizes.")
+
+    def test_voice_emits_the_next_complete_sentence_while_reply_is_streaming(self):
+        speech = SpeechSegmenter()
+        self.assertEqual(speech.feed("Consider the Moon, Maker. "), ["Consider the Moon, Maker."])
+        self.assertEqual(
+            speech.feed("Most craters formed when rocks hit its surface. There"),
+            ["Most craters formed when rocks hit its surface."],
+        )
 
     def test_clean_audio_preserves_quiet_tail_and_fades(self):
         import numpy as np

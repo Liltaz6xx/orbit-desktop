@@ -32,7 +32,7 @@ class SpeechSegmenter:
         self.buffer += text
         segments = []
         while self.buffer:
-            minimum, maximum = (16, 56) if self.first_chunk else (85, 180)
+            minimum, maximum = (16, 56) if self.first_chunk else (40, 112)
             fence = self.buffer.find("\x60\x60\x60")
             if fence >= 0:
                 if fence:
@@ -124,12 +124,14 @@ class OrbitVoice:
         if cpu_only and not os.getenv("ONNX_PROVIDER"):
             options = ort.SessionOptions()
             options.intra_op_num_threads = min(8, os.cpu_count() or 1)
+            # Let Ollama use these cores while speech synthesis is idle.
+            options.add_session_config_entry("session.intra_op.allow_spinning", "0")
             session = ort.InferenceSession(str(model), options, providers=["CPUExecutionProvider"])
             self.engine = Kokoro.from_session(session, str(library))
         else:
             self.engine = Kokoro(str(model), str(library))
         self.parameters = set(inspect.signature(self.engine.create).parameters)
-        log.info("event=kokoro_loaded elapsed_ms=%.0f", (perf_counter() - started) * 1000)
+        log.info("event=kokoro_loaded model=%s elapsed_ms=%.0f", model.name, (perf_counter() - started) * 1000)
 
     def synthesize(self, text):
         self.load()

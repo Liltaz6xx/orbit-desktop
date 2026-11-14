@@ -23,8 +23,9 @@ DEFAULT_MODEL = "qwen2.5:1.5b"
 MAX_CONVERSATION_PAIRS = 10
 MAX_RELEVANT_MEMORIES = 8
 MAX_MEMORY_LENGTH = 500
-VOICE_MODEL = ASSETS / "kokoro-v1.0.int8.onnx"
-VOICE_LIBRARY = ASSETS / "voices-v1.0.bin"
+VOICE_MODEL = "kokoro-v1.0.onnx"
+LEGACY_VOICE_MODEL = "kokoro-v1.0.int8.onnx"
+VOICE_LIBRARY = "voices-v1.0.bin"
 VOICE_NAME = "bm_george"
 VOICE_LANGUAGE = "en-gb"
 VOICE_SPEED = 0.90
@@ -33,10 +34,13 @@ AUDIO_LEVEL_GAIN = 9.0
 
 def voice_files() -> tuple[Path, Path]:
     profile_voice = PROFILE_DIR / "voice"
-    local = (profile_voice / VOICE_MODEL.name, profile_voice / VOICE_LIBRARY.name)
-    if all(path.is_file() for path in (VOICE_MODEL, VOICE_LIBRARY)) and not all(path.is_file() for path in local):
-        return VOICE_MODEL, VOICE_LIBRARY
-    return local
+    # Prefer the faster export even when the profile contains the older model.
+    for name in (VOICE_MODEL, LEGACY_VOICE_MODEL):
+        for directory in (profile_voice, ASSETS):
+            model, library = directory / name, directory / VOICE_LIBRARY
+            if model.is_file() and library.is_file():
+                return model, library
+    return profile_voice / VOICE_MODEL, profile_voice / VOICE_LIBRARY
 
 
 class ConfigError(ValueError):

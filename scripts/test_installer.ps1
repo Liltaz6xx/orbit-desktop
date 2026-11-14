@@ -85,7 +85,11 @@ MemoryStore(DATABASE_PATH).save_memory("The upgrade preserves this memory")
     }
     if (-not (Select-String -LiteralPath $upgradeLog -Pattern 'Reusing installed Ollama model' -Quiet) -or
         -not (Select-String -LiteralPath $upgradeLog -SimpleMatch 'Already present: voices-v1.0.bin' -Quiet)) {
-        throw 'Setup did not reuse the provisioned model and voice files.'
+        throw 'Setup did not reuse the provisioned language model and voice library.'
+    }
+    if (-not $PreviousInstaller -and
+        -not (Select-String -LiteralPath $upgradeLog -SimpleMatch 'Already present: kokoro-v1.0.onnx' -Quiet)) {
+        throw 'Setup did not reuse the provisioned Kokoro model.'
     }
     if (-not $PreviousInstaller -and
         -not (Select-String -LiteralPath $freshLog -Pattern 'Kokoro voice assets are ready' -Quiet)) {
@@ -103,10 +107,12 @@ MemoryStore(DATABASE_PATH).save_memory("The upgrade preserves this memory")
         $smoke = @'
 from PySide6.QtCore import QTimer
 from PySide6.QtWidgets import QApplication
-from orbit.config import load_settings
+from orbit.config import VOICE_MODEL, load_settings, voice_files
 from orbit.voice import OrbitVoice
 from orbit.window import OrbitWindow
 
+if voice_files()[0].name != VOICE_MODEL:
+    raise SystemExit("Setup did not install the new Kokoro model.")
 samples, rate = OrbitVoice().synthesize("ORBIT is ready.")
 if not len(samples) or rate != 24000:
     raise SystemExit("The installed Kokoro voice did not produce 24 kHz audio.")

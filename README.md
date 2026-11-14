@@ -53,7 +53,7 @@ timeout = 180
 max_tokens = 220
 ~~~
 
-The source ZIP includes **Check_ORBIT.bat** to verify packages, artwork, audio output, SQLite and the selected local model. Kokoro speech can pause between chunks on slower CPUs. If both voice engines fail, open **Read reply** to see the answer.
+The source ZIP includes **Check_ORBIT.bat** to verify packages, artwork, audio output, SQLite and the selected local model. To check where Ollama loaded the language model, run `ollama ps` while a model is loaded and look at the **PROCESSOR** column. Kokoro speech uses its own inference engine. If both voice engines fail, open **Read reply** to see the answer. [Ollama processor reporting](https://docs.ollama.com/faq#how-can-i-tell-if-my-model-was-loaded-onto-the-gpu)
 
 ## Development
 

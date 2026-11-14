@@ -26,19 +26,19 @@ Write-Host 'Installing ORBIT dependencies into .venv...' -ForegroundColor Cyan
 if ($LASTEXITCODE -ne 0) { throw 'Dependency installation failed.' }
 
 $assets = Join-Path $Root 'assets'
-$voiceFiles = [ordered]@{'kokoro-v1.0.int8.onnx' = 50000000; 'voices-v1.0.bin' = 20000000}
+$voiceFiles = [ordered]@{'kokoro-v1.0.onnx' = 300000000; 'voices-v1.0.bin' = 20000000}
 $missing = @($voiceFiles.Keys | Where-Object {
     $path = Join-Path $assets $_
     -not (Test-Path -LiteralPath $path -PathType Leaf) -or (Get-Item -LiteralPath $path).Length -lt $voiceFiles[$_]
 })
 if ($missing.Count) {
     Write-Host "Missing or incomplete Kokoro files: $($missing -join ', ')" -ForegroundColor Yellow
-    $download = if ($NonInteractive) { 'n' } else { Read-Host 'Download the Kokoro model and voices (about 136 MB)? [y/N]' }
+    $download = if ($NonInteractive) { 'n' } else { Read-Host 'Download the faster Kokoro model and voice files (up to 354 MB)? [y/N]' }
     if ($download -match '^(y|yes)$') {
         & (Join-Path $PSScriptRoot 'download_voice_models.ps1') -AssetsDirectory $assets
     }
     else {
-        Write-Host 'ORBIT uses Windows speech until the Kokoro assets are available.'
+        Write-Host 'ORBIT can use existing Kokoro assets or fall back to Windows speech.'
     }
 }
 

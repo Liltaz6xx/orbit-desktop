@@ -1,5 +1,10 @@
 # ORBIT changelog
 
+## 0.7.0-beta.7
+
+- Use the faster full-precision Kokoro model with the same British voice.
+- Queue shorter speech phrases so playback can start them sooner.
+
 ## 0.7.0-beta.6
 
 - Provision Ollama, Qwen2.5 1.5B, and Kokoro from the Windows installer.

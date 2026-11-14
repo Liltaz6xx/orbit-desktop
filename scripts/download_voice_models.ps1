@@ -24,10 +24,10 @@ New-Item -ItemType Directory -Path $AssetsDirectory -Force | Out-Null
 
 $files = @(
     @{
-        Name = 'kokoro-v1.0.int8.onnx'
-        Url = 'https://github.com/thewh1teagle/kokoro-onnx/releases/download/model-files-v1.1/kokoro-v1.0.int8.onnx'
-        Sha256 = 'ae315a79b623f244700e4afb9246c46a26066782e049ba174bf3ba433970ee9c'
-        MinSize = 50000000
+        Name = 'kokoro-v1.0.onnx'
+        Url = 'https://github.com/thewh1teagle/kokoro-onnx/releases/download/model-files-v1.1/kokoro-v1.0.onnx'
+        Sha256 = 'beb0d1848dee9a49da392cc3df26958d46cfa35d321edf434f52949153f0df3a'
+        MinSize = 300000000
     },
     @{
         Name = 'voices-v1.0.bin'

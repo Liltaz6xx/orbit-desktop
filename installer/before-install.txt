@@ -2,6 +2,7 @@ ORBIT Desktop runs in your Windows account. Setup downloads Python, the
 required libraries, Ollama, the Qwen2.5 1.5B language model and the Kokoro
 voice files as needed. A fresh installation downloads about 3 GB. Make sure
 you have an Internet connection and several GB of free disk space.
+Updating from 0.7.0-beta.6 downloads the faster Kokoro voice model (326 MB).
 
 While ORBIT is open, it advertises "Playing ORBIT" to the Discord desktop
 client if it is running. Discord's activity-sharing settings control

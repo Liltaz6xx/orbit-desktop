@@ -1,10 +1,11 @@
 Kokoro neural voice requires these local files:
 
-    kokoro-v1.0.int8.onnx
+    kokoro-v1.0.onnx
     voices-v1.0.bin
 
 Copy the files from an existing ORBIT installation or opt in to the download
 when Setup_ORBIT.bat offers it. The download script verifies the release hashes.
+The older kokoro-v1.0.int8.onnx file still works if the new model is unavailable.
 
 Official release:
     https://github.com/thewh1teagle/kokoro-onnx/releases/tag/model-files-v1.1
