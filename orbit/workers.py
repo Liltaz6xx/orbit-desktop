@@ -147,6 +147,9 @@ class OrbitWorkers:
             use_kokoro = False
             self.voice_error(exc)
         for turn in self.turns():
+            if isinstance(self.voice, OrbitVoice):
+                self.voice.voice_name = turn.preferences.voice
+                self.voice.language = turn.preferences.language
             while not turn.stop.is_set() and not turn.audio_failed.is_set():
                 try:
                     phrase = turn.text.get(timeout=0.04)

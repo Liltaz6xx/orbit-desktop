@@ -1,6 +1,7 @@
 """Handle typed requests and prepare approvals on the conversation worker."""
 
 import logging
+import re
 import sqlite3
 
 from .actions import ACTION_TARGETS, fast_action_route, identity_response, unsupported_action_request
@@ -27,19 +28,28 @@ class Conversation:
             self.events.subsystem.emit("memory", "Memory unavailable. Check the database path and permissions.")
 
     def answer(self, turn):
-        command = memory_command(turn.message)
+        message = turn.message
+        name = turn.preferences.name
+        if re.fullmatch(r"(?:what(?: is|'s) your name|who are you)[?.! ]*", message, re.I):
+            return f"My name is {name}, Maker.", "", False
+        if name.casefold() != "orbit":
+            message = re.sub(r"^" + re.escape(name) + r"[ ,.:]+", "", message, flags=re.I) or message
+        command = memory_command(message)
         if command:
             return self.memory(turn, *command), "", False
-        identity = identity_response(turn.message)
+        identity = identity_response(message)
         if identity:
             return identity, "", False
-        action = fast_action_route(turn.message)
+        macro = re.fullmatch(r"run macro (.+)", " ".join(message.casefold().split()).strip(" .!?"))
+        if macro:
+            return self.run_macro(turn, macro[1]), "", False
+        action = fast_action_route(message)
         if action:
             return self.windows(turn, *action), "", False
-        if unsupported_action_request(turn.message):
+        if unsupported_action_request(message):
             return "I couldn't match that to an approved Windows command, Maker.", "", False
 
-        messages, notice, turn.context_revision = self.ai.build_messages(turn.message)
+        messages, notice, turn.context_revision = self.ai.build_messages(message, turn.preferences)
         try:
             reply = self.ai.client.stream(messages, turn.speak, turn.stop)
         except OllamaError as exc:
@@ -51,11 +61,34 @@ class Conversation:
             return reply, str(exc), False
         return reply, notice, True
 
+    def run_macro(self, turn, name):
+        commands = turn.preferences.macros.get(name)
+        if not commands:
+            return f"I couldn't find a macro called {name}, Maker."
+        steps = [fast_action_route(command) for command in commands]
+        labels = [ACTION_TARGETS[action][target] for action, target in steps]
+        approval = Approval("Run Windows macro", "\n".join(f"{i}. {label}" for i, label in enumerate(labels, 1)),
+                            "macro", name)
+        if not self.approve(turn, approval):
+            return "Macro declined, Maker."
+        replies = []
+        for (action, target), label in zip(steps, labels):
+            if turn.stop.is_set():
+                break
+            try:
+                replies.append(self.controller.execute(action, target, approved=True))
+            except (OSError, ImportError) as exc:
+                log.warning("event=macro_step_failed turn=%d error=%s", turn.id, type(exc).__name__)
+                replies.append(f"I stopped the macro at {label}, Maker. Earlier steps may have run.")
+                break
+        return " ".join(replies)
+
     def windows(self, turn, action, target):
         label = ACTION_TARGETS[action][target]
         if not self.approve(turn, Approval(
             "Windows permission", f"Allow ORBIT to {label}?" if action == "lock_pc"
-            else f"Allow ORBIT to open {label}?", "windows", (action, target),
+            else f"Allow ORBIT to {'check' if action == 'system_info' else 'open'} {label}?",
+            "spoken_windows" if turn.from_microphone else "windows", (action, target),
         )):
             return "Action declined, Maker."
         if turn.stop.is_set():

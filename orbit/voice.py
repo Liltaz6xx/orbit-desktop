@@ -104,6 +104,8 @@ class OrbitVoice:
     def __init__(self):
         self.engine = None
         self.parameters = set()
+        self.voice_name = VOICE_NAME
+        self.language = VOICE_LANGUAGE
 
     def load(self):
         if self.engine is not None:
@@ -135,7 +137,7 @@ class OrbitVoice:
 
     def synthesize(self, text):
         self.load()
-        arguments = {"voice": VOICE_NAME, "speed": VOICE_SPEED, "lang": VOICE_LANGUAGE}
+        arguments = {"voice": self.voice_name, "speed": VOICE_SPEED, "lang": self.language}
         for name, value in {"trim": False, "sentence_pause": 0.16, "clause_pause": 0.07}.items():
             if name in self.parameters:
                 arguments[name] = value

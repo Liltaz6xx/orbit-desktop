@@ -4,7 +4,7 @@ from itertools import count
 from time import perf_counter
 import logging
 
-from PySide6.QtCore import QEvent, Qt
+from PySide6.QtCore import QEvent, Qt, QTimer
 from PySide6.QtGui import QKeySequence, QShortcut
 from PySide6.QtWidgets import (
     QApplication, QDialog, QDialogButtonBox, QFrame, QHBoxLayout, QLabel, QLineEdit,
@@ -14,7 +14,10 @@ from PySide6.QtWidgets import (
 from .actions import ActionPermissions, WindowsController
 from .config import APP_VERSION, load_settings
 from .discord_presence import APPLICATION_ID, DiscordPresence
+from .listener import VoiceListener
 from .models import AudioMeter, OrbitEvents, OrbitTurn
+from .preferences import Preferences, read_preferences
+from .settings_dialog import SettingsDialog
 from .theme import STYLESHEET, apply_window_frame
 from .visuals import OrbitVisual
 from .workers import OrbitWorkers
@@ -24,7 +27,7 @@ TURN_IDS = count(1)
 
 
 class OrbitWindow(QWidget):
-    def __init__(self, settings=None, *, controller=None, voice=None):
+    def __init__(self, settings=None, *, controller=None, voice=None, preferences=None):
         super().__init__()
         self.setObjectName("Root")
         self.setWindowTitle("ORBIT")
@@ -36,8 +39,19 @@ class OrbitWindow(QWidget):
         self.last_reply = ""
         self.reply_dialog = None
         self.discord_dialog = None
+        self.settings_dialog = None
         self.presence = DiscordPresence(self)
         self.notices = {}
+        try:
+            self.preferences = preferences if preferences is not None else read_preferences()
+        except ValueError as exc:
+            self.preferences = Preferences()
+            self.notices["settings"] = str(exc)
+        self.listener = VoiceListener(self)
+        self.listener.status.connect(lambda text: self.on_subsystem("microphone", text))
+        self.listener.heard.connect(self.submit_spoken, Qt.ConnectionType.QueuedConnection)
+        self.listen_after_stop = QTimer(self, singleShot=True, interval=600)
+        self.listen_after_stop.timeout.connect(self.resume_listener)
         self.permissions = ActionPermissions()
         self.meter = AudioMeter()
         self.events = OrbitEvents(self)
@@ -55,6 +69,7 @@ class OrbitWindow(QWidget):
         self.workers = OrbitWorkers(settings or load_settings(), self.events, self.meter,
                                     controller if controller is not None else WindowsController(), voice)
         self.workers.start()
+        self.apply_preferences()
         if QApplication.platformName() == "windows":
             self.presence.start(APPLICATION_ID)
 
@@ -68,9 +83,12 @@ class OrbitWindow(QWidget):
         root.setContentsMargins(30, 22, 30, 19)
         root.setSpacing(0)
         header = QHBoxLayout()
-        brand = QLabel("ORBIT", objectName="Brand")
-        header.addWidget(brand)
+        self.brand = QLabel("ORBIT", objectName="Brand")
+        header.addWidget(self.brand)
         header.addStretch()
+        settings_button = QPushButton("Settings", objectName="Reply")
+        settings_button.clicked.connect(self.show_settings)
+        header.addWidget(settings_button)
         discord = QPushButton("Discord", objectName="Reply")
         discord.setAccessibleName("Discord activity status")
         discord.clicked.connect(self.show_discord)
@@ -167,13 +185,23 @@ class OrbitWindow(QWidget):
             self.send_message()
 
     def send_message(self):
-        message = self.entry.text().strip()
+        self.submit_message(self.entry.text())
+
+    def submit_spoken(self, message):
+        if self.preferences.listening and self.settings_dialog is None:
+            self.submit_message(message, from_microphone=True)
+
+    def submit_message(self, message, *, from_microphone=False):
+        message = message.strip()
         if self.closing or self.turn is not None or not message:
             return
-        turn = OrbitTurn(next(TURN_IDS), message)
+        turn = OrbitTurn(next(TURN_IDS), message, preferences=self.preferences, from_microphone=from_microphone)
         self.turn = turn
+        self.listen_after_stop.stop()
+        self.listener.stop()
         self.meter.turn_id = turn.id
-        self.entry.clear()
+        if not from_microphone:
+            self.entry.clear()
         self.last_reply = ""
         if self.reply_dialog is not None:
             self.reply_dialog.close()
@@ -191,7 +219,7 @@ class OrbitWindow(QWidget):
         if self.closing:
             return
         self.notices[name] = detail
-        if self.turn is None and self.status.text() == "Ready, Maker":
+        if self.turn is None and self.status.text() in {"Ready, Maker", "Stopped"}:
             self.detail.setText(self.ready_detail())
 
     def ready_detail(self):
@@ -274,6 +302,7 @@ class OrbitWindow(QWidget):
         self.set_state("Ready, Maker", turn.notice or self.ready_detail())
         self.update_send()
         self.entry.setFocus()
+        self.resume_listener()
 
     def show_reply(self):
         if not self.last_reply:
@@ -299,6 +328,41 @@ class OrbitWindow(QWidget):
         dialog.open()
         if QApplication.platformName() == "windows":
             apply_window_frame(dialog)
+
+    def resume_listener(self):
+        if (self.preferences.listening and not self.closing and self.turn is None
+                and self.settings_dialog is None and QApplication.platformName() == "windows"):
+            self.listener.start(self.preferences.name)
+
+    def apply_preferences(self):
+        name = self.preferences.name
+        self.setWindowTitle(name)
+        self.brand.setText(name)
+        self.entry.setAccessibleName(f"Message to {name}")
+        self.entry.setPlaceholderText(f"Message {name}")
+        self.notices.pop("microphone", None)
+        if self.turn is None:
+            self.detail.setText(self.ready_detail())
+        self.resume_listener()
+
+    def show_settings(self):
+        if self.settings_dialog is not None:
+            self.settings_dialog.raise_()
+            return
+        self.listener.stop()
+        dialog = SettingsDialog(self.preferences, self)
+        self.settings_dialog = dialog
+        dialog.setAttribute(Qt.WidgetAttribute.WA_DeleteOnClose)
+
+        def closed(result):
+            self.settings_dialog = None
+            if result == QDialog.DialogCode.Accepted:
+                self.preferences = dialog.preferences
+                self.notices.pop("settings", None)
+            self.apply_preferences()
+
+        dialog.finished.connect(closed)
+        dialog.open()
 
     def show_discord(self):
         if self.discord_dialog is not None:
@@ -343,9 +407,12 @@ class OrbitWindow(QWidget):
         self.set_state("Stopped", self.ready_detail())
         self.update_send()
         self.entry.setFocus()
+        self.listen_after_stop.start()
 
     def closeEvent(self, event):
         self.closing = True
+        self.listen_after_stop.stop()
+        self.listener.stop()
         self.presence.stop()
         self.turn = None
         if self.approval_dialog is not None:

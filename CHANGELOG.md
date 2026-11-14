@@ -1,5 +1,11 @@
 # ORBIT changelog
 
+## 0.7.0-beta.8
+
+- Add assistant name, voice and personality settings.
+- Add an opt-in, local Windows Speech wake phrase and dictation.
+- Run named sequences of supported Windows actions with approval.
+
 ## 0.7.0-beta.7
 
 - Use the faster full-precision Kokoro model with the same British voice.

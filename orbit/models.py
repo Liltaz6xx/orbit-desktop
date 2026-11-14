@@ -7,6 +7,8 @@ from time import perf_counter
 
 from PySide6.QtCore import QObject, Signal
 
+from .preferences import Preferences
+
 
 class OrbitEvents(QObject):
     subsystem = Signal(str, str)
@@ -90,6 +92,8 @@ class OrbitTurn:
     notice: str = ""
     persist: bool = False
     context_revision: int | None = None
+    preferences: Preferences = field(default_factory=Preferences)
+    from_microphone: bool = False
 
     def speak(self, phrase):
         return put_until(self.text, phrase, self.stop, self.audio_failed)

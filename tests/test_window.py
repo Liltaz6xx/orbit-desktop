@@ -15,6 +15,7 @@ from PySide6.QtWidgets import QApplication, QMessageBox
 
 from orbit.config import Settings
 from orbit.memory import MemoryStore
+from orbit.preferences import Preferences
 from orbit.window import OrbitWindow
 
 
@@ -150,3 +151,20 @@ class WindowTests(unittest.TestCase):
         self.assertIn("Liltaz6xx created ORBIT", self.win.last_reply)
         self.assertTrue(self.win.reply.isVisible())
         self.assertIn("Speech could not play", self.win.detail.text())
+
+    def test_custom_name_and_macro_approval(self):
+        self.win.preferences = Preferences(name="Nova", macros={"work": ("open Notepad", "open Calculator")})
+        self.win.apply_preferences()
+        self.assertEqual(self.win.windowTitle(), "Nova")
+        self.send("What is your name?")
+        self.until(lambda: self.win.turn is None)
+        self.assertIn("Nova", self.win.last_reply)
+        self.send("run macro work")
+        self.until(lambda: self.win.approval_dialog is not None)
+        self.assertIn("Calculator", self.win.approval_dialog.text())
+        self.confirm(QMessageBox.StandardButton.No)
+        self.controller.execute.assert_not_called()
+        self.send("run macro work")
+        self.confirm(QMessageBox.StandardButton.Yes)
+        self.assertEqual([call.args for call in self.controller.execute.call_args_list],
+                         [("open_app", "notepad"), ("open_app", "calculator")])
