@@ -1,4 +1,6 @@
-# ORBIT Desktop 0.7.0 beta 9
+# ORBIT Desktop 0.7.0 beta 10
+
+Settings, Discord, and Update now have separate buttons with icons. Subtitles appear while ORBIT speaks. **Read reply** still opens the complete response.
 
 Install this build from GitHub once to get in-app updates. ORBIT checks for the latest Windows build on startup and hourly. Click **Update** to check immediately. When a build is available, confirm to download the verified installer, update in place, and reopen ORBIT.
 

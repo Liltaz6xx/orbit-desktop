@@ -15,6 +15,7 @@ class OrbitEvents(QObject):
     approval = Signal(int, object)
     generated = Signal(int, str, str, bool)
     speech_started = Signal(int, str)
+    caption = Signal(int, str)
     speech_finished = Signal(int, str, str)
     saved = Signal(int, str)
 

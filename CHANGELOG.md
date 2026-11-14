@@ -1,5 +1,10 @@
 # ORBIT changelog
 
+## 0.7.0-beta.10
+
+- Separate the header buttons and add icons.
+- Show subtitles as each spoken phrase plays.
+
 ## 0.7.0-beta.9
 
 - Check GitHub for updates and install verified Windows releases from the app.

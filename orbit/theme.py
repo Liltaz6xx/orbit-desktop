@@ -12,6 +12,8 @@ STYLESHEET = f"""
     QLabel#Version {{ color: {MUTED}; font: 11px 'Segoe UI'; }}
     QLabel#Status {{ color: {TEXT}; font: 600 15px 'Segoe UI'; }}
     QLabel#Detail {{ color: {MUTED}; font: 12px 'Segoe UI'; }}
+    QLabel#Subtitle {{ color: {TEXT}; background: #15181D; border: 1px solid #2A2D34;
+        border-radius: 10px; padding: 8px 14px; font: 15px 'Segoe UI'; }}
     QLabel#Hint {{ color: {MUTED}; font: 11px 'Segoe UI'; }}
     QFrame#Composer {{ background: #121418; border: 1px solid #2A2D34; border-radius: 22px; }}
     QFrame#Composer[focused="true"] {{ border-color: #616872; }}
@@ -23,6 +25,11 @@ STYLESHEET = f"""
     QPushButton#Send:pressed {{ background: #C4CAD3; }}
     QPushButton#Send:focus {{ border-color: #666D78; }}
     QPushButton#Send:disabled {{ background: #212429; color: {MUTED}; }}
+    QPushButton#HeaderAction {{ color: {TEXT}; background: #15181D; border: 1px solid #353942;
+        border-radius: 7px; padding: 5px 8px; font: 12px 'Segoe UI'; }}
+    QPushButton#HeaderAction:hover {{ background: #272C34; }}
+    QPushButton#HeaderAction:focus {{ border-color: #7B8494; }}
+    QPushButton#HeaderAction:disabled {{ color: {MUTED}; }}
     QPushButton#Reply {{ color: {TEXT}; background: transparent; border: none;
         font: 12px 'Segoe UI'; text-decoration: underline; }}
     QPushButton#Reply:hover, QPushButton#Reply:focus {{ color: white; }}

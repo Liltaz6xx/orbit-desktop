@@ -10,7 +10,7 @@ from PySide6.QtCore import QEvent, Qt, QTimer
 from PySide6.QtGui import QKeySequence, QShortcut
 from PySide6.QtWidgets import (
     QApplication, QDialog, QDialogButtonBox, QFrame, QHBoxLayout, QLabel, QLineEdit,
-    QMessageBox, QPushButton, QTextEdit, QVBoxLayout, QWidget,
+    QMessageBox, QPushButton, QStyle, QTextEdit, QVBoxLayout, QWidget,
 )
 
 from .actions import ActionPermissions, WindowsController
@@ -69,6 +69,7 @@ class OrbitWindow(QWidget):
         self.events.approval.connect(self.on_approval)
         self.events.generated.connect(self.on_generated)
         self.events.speech_started.connect(self.on_speech_started)
+        self.events.caption.connect(self.on_caption)
         self.events.speech_finished.connect(self.on_speech_finished)
         self.events.saved.connect(self.on_saved)
         self.build_ui()
@@ -97,16 +98,18 @@ class OrbitWindow(QWidget):
         root.setSpacing(0)
         header = QHBoxLayout()
         self.brand = QLabel("ORBIT", objectName="Brand")
+        self.brand.setMinimumWidth(0)
         header.addWidget(self.brand)
         header.addStretch()
-        settings_button = QPushButton("Settings", objectName="Reply")
+        header.setSpacing(7)
+        settings_button = self.header_button("Settings", QStyle.StandardPixmap.SP_FileDialogDetailedView)
         settings_button.clicked.connect(self.show_settings)
         header.addWidget(settings_button)
-        discord = QPushButton("Discord", objectName="Reply")
+        discord = self.header_button("Discord", QStyle.StandardPixmap.SP_MessageBoxInformation)
         discord.setAccessibleName("Discord activity status")
         discord.clicked.connect(self.show_discord)
         header.addWidget(discord)
-        self.update_button = QPushButton("Update", objectName="Reply")
+        self.update_button = self.header_button("Update", QStyle.StandardPixmap.SP_BrowserReload)
         self.update_button.clicked.connect(lambda: self.check_for_update(manual=True))
         header.addWidget(self.update_button)
         header.addSpacing(14)
@@ -124,6 +127,12 @@ class OrbitWindow(QWidget):
         self.detail.setWordWrap(True)
         self.detail.setMinimumHeight(32)
         root.addWidget(self.detail)
+        self.subtitle = QLabel(objectName="Subtitle")
+        self.subtitle.setTextFormat(Qt.TextFormat.PlainText)
+        self.subtitle.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.subtitle.setWordWrap(True)
+        self.subtitle.hide()
+        root.addWidget(self.subtitle)
         root.addSpacing(14)
 
         composer_area = QHBoxLayout()
@@ -174,6 +183,11 @@ class OrbitWindow(QWidget):
         footer_area.addStretch()
         root.addLayout(footer_area)
         self.update_send()
+
+    def header_button(self, label, icon):
+        button = QPushButton(self.style().standardIcon(icon), label, objectName="HeaderAction")
+        button.setCursor(Qt.CursorShape.PointingHandCursor)
+        return button
 
     def eventFilter(self, watched, event):
         if watched is self.entry and event.type() in (QEvent.Type.FocusIn, QEvent.Type.FocusOut):
@@ -290,10 +304,18 @@ class OrbitWindow(QWidget):
         if turn is not None:
             self.set_state("Speaking", backend, "speaking")
 
+    def on_caption(self, turn_id, text):
+        turn = self.current_turn(turn_id)
+        if turn is not None and not turn.played:
+            self.subtitle.setText(text)
+            self.subtitle.show()
+
     def on_speech_finished(self, turn_id, _backend, error):
         turn = self.current_turn(turn_id)
         if turn is not None:
             turn.played = True
+            self.subtitle.clear()
+            self.subtitle.hide()
             if error:
                 turn.notice = error
             self.maybe_finish(turn)
@@ -353,7 +375,8 @@ class OrbitWindow(QWidget):
     def apply_preferences(self):
         name = self.preferences.name
         self.setWindowTitle(name)
-        self.brand.setText(name)
+        self.brand.setToolTip(name)
+        self.brand.setText(self.brand.fontMetrics().elidedText(name, Qt.TextElideMode.ElideRight, 108))
         self.entry.setAccessibleName(f"Message to {name}")
         self.entry.setPlaceholderText(f"Message {name}")
         self.notices.pop("microphone", None)
@@ -494,6 +517,8 @@ class OrbitWindow(QWidget):
         if turn is None or not self.workers.cancel(turn):
             return
         self.turn = None
+        self.subtitle.clear()
+        self.subtitle.hide()
         if self.approval_dialog is not None:
             self.approval_dialog.reject()
         self.meter.turn_id = 0

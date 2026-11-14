@@ -190,6 +190,9 @@ class OrbitWorkers:
                 backend = name
                 self.events.speech_started.emit(turn.id, name)
 
+        def caption(text):
+            self.events.caption.emit(turn.id, text)
+
         try:
             item = None
             while not turn.stop.is_set():
@@ -202,11 +205,12 @@ class OrbitWorkers:
                         break
                 if use_windows or item.rate == 0:
                     started("Windows voice")
+                    caption(item.text)
                     windows_speak(item.text, turn.stop)
                     item = None
                 else:
                     try:
-                        item = play_stream(item, turn, self.meter, started)
+                        item = play_stream(item, turn, self.meter, started, caption)
                     except AudioDeviceError as exc:
                         log.warning("event=audio_device_fallback turn=%d detail=%s", turn.id, exc)
                         self.events.subsystem.emit("audio", str(exc) + " Trying Windows speech.")

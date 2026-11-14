@@ -26,7 +26,7 @@ class AudioDeviceError(RuntimeError):
     pass
 
 
-def play_stream(first, turn, meter, started):
+def play_stream(first, turn, meter, started, caption):
     """Play same-rate Kokoro chunks in one stream. Return any fallback item."""
     try:
         import numpy as np
@@ -60,6 +60,8 @@ def play_stream(first, turn, meter, started):
                     break
                 position = 0
             count = min(frames - filled, len(chunk.samples) - position)
+            if position == 0 and count:
+                caption(chunk.text)
             out[filled:filled + count, 0] = chunk.samples[position:position + count]
             position += count
             filled += count
