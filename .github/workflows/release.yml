@@ -3,6 +3,7 @@ name: Draft Windows release
 on:
   push:
     tags: ["v*"]
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -12,6 +13,7 @@ jobs:
     uses: ./.github/workflows/windows.yml
 
   release:
+    if: startsWith(github.ref, 'refs/tags/v')
     needs: test
     runs-on: windows-2025
     permissions:
@@ -26,6 +28,12 @@ jobs:
           architecture: x64
       - name: Build release ZIP
         run: python scripts/build_release.py --tag "$env:GITHUB_REF_NAME"
+      - name: Build Windows x64 installer
+        run: ./scripts/build_installer.ps1 -InstallCompiler -Tag "$env:GITHUB_REF_NAME"
+      - name: Verify installation and upgrade
+        run: |
+          $version = $env:GITHUB_REF_NAME.Substring(1)
+          ./scripts/test_installer.ps1 -Installer "dist/ORBIT-Desktop-$version-Windows-x64-Setup.exe"
       - name: Create draft release
         env:
           GH_TOKEN: ${{ github.token }}

@@ -23,6 +23,16 @@ def main() -> int:
     app.setApplicationVersion(APP_VERSION)
     app.setStyle("Fusion")
     app.setFont(QFont("Segoe UI", 10))
+    if sys.platform == "win32":
+        import ctypes
+        from ctypes.wintypes import HANDLE, LPCWSTR, BOOL
+
+        create_mutex = ctypes.WinDLL("kernel32", use_last_error=True).CreateMutexW
+        create_mutex.argtypes = (ctypes.c_void_p, BOOL, LPCWSTR)
+        create_mutex.restype = HANDLE
+        # Inno Setup uses this named handle to detect a running application.
+        # Windows releases the handle when the process exits.
+        create_mutex(None, False, "OrbitDesktop.Application")
     icon = ASSETS / "orbit.ico"
     if icon.is_file():
         app.setWindowIcon(QIcon(str(icon)))

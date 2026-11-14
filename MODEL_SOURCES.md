@@ -13,3 +13,5 @@ ORBIT installs Python packages through pip. Model weights are downloaded separat
 Setup can fetch `kokoro-v1.0.int8.onnx` and `voices-v1.0.bin` after you opt in. The downloader verifies each file against its expected SHA-256 hash. [Kokoro ONNX voice assets](https://github.com/thewh1teagle/kokoro-onnx/releases/tag/model-files-v1.1)
 
 Every separately installed model or library remains subject to its upstream terms.
+
+The Windows installer uses [uv](https://docs.astral.sh/uv/reference/policies/license/) to install verified Python wheels into a private environment. It downloads the [CPython distribution from Python Build Standalone](https://github.com/astral-sh/python-build-standalone). Those packages retain their upstream licence files.

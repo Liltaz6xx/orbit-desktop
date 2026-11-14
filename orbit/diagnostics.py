@@ -7,7 +7,7 @@ import sys
 from contextlib import closing
 
 from .ai import OllamaClient, OllamaError
-from .config import APP_VERSION, ASSETS, ConfigError, PROFILE_DIR, VOICE_LIBRARY, VOICE_MODEL, load_settings
+from .config import APP_VERSION, ASSETS, ConfigError, PROFILE_DIR, load_settings, voice_files
 from .memory import SCHEMA_VERSION, MemoryStore
 
 PACKAGES = {
@@ -70,7 +70,7 @@ def main(argv=None):
             report(not QImage(str(ASSETS / name)).isNull(), f"Visual asset {name}")
     except ImportError:
         report(False, "Visual assets could not be decoded without PySide6.")
-    for path, minimum_size in ((VOICE_MODEL, 50_000_000), (VOICE_LIBRARY, 20_000_000)):
+    for path, minimum_size in zip(voice_files(), (50_000_000, 20_000_000)):
         try:
             report(path.is_file() and path.stat().st_size >= minimum_size, f"Voice asset {path.name}")
         except OSError:

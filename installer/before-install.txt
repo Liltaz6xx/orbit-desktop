@@ -1,0 +1,13 @@
+ORBIT Desktop runs in your Windows account. Setup downloads a private copy of
+Python and the required libraries on first install. It needs an Internet
+connection and about 450 MB of free disk space.
+
+For local AI, install and start Ollama, then run this command in PowerShell:
+
+    ollama pull qwen2.5:1.5b
+
+Windows speech is available immediately. To add the Kokoro voice, choose
+Download Kokoro voice from the ORBIT Desktop folder on your Start menu.
+
+To update ORBIT Desktop, download and run the newer Setup EXE. Close ORBIT
+when Setup asks. Your saved memories and settings remain in your local profile.

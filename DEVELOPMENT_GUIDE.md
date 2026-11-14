@@ -45,15 +45,24 @@ Tests use temporary SQLite databases, a loopback mock server, offscreen Qt and m
 
 ## Preparing a beta
 
-Run the Windows CI checks before tagging. The release workflow tests the tagged
-commit, then builds the ZIP and checksum and opens a draft GitHub Release.
-Review the notes and assets on GitHub before publishing the draft. To build the
-same ZIP locally from a committed tree, run:
+The release workflow tests the tagged commit, builds the ZIP and installer,
+exercises the installer, and opens a draft GitHub Release. If the tag was
+pushed before GitHub registered the workflow, run **Draft Windows release**
+manually for that tag. Review the notes and checksums before publishing.
+
+Build locally from a committed tree with Python 3.12 and Inno Setup 6.7.4:
 
 ~~~powershell
 .\.venv\Scripts\python.exe scripts\build_release.py
+.\scripts\build_installer.ps1 -Compiler 'C:\Program Files (x86)\Inno Setup 6\ISCC.exe'
 ~~~
 
 The ZIP contains the tracked application source, artwork, docs and launchers.
 The package script uses an explicit file list and reads each file from the
 commit. The ZIP works with the same setup instructions as the repository.
+
+The installer provisions a private Python runtime and installs wheels from
+installer/requirements-win-x64.txt with SHA-256 verification. A setup run
+reuses the runtime when the lock file and provisioning code match. Keep
+the Inno Setup AppId stable so Windows detects upgrades. Run the installer
+test only on a disposable Windows runner or Windows Sandbox account.

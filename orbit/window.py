@@ -4,15 +4,16 @@ from itertools import count
 from time import perf_counter
 import logging
 
-from PySide6.QtCore import QEvent, Qt
+from PySide6.QtCore import QEvent, QSettings, Qt
 from PySide6.QtGui import QKeySequence, QShortcut
 from PySide6.QtWidgets import (
-    QApplication, QDialog, QDialogButtonBox, QFrame, QHBoxLayout, QLabel, QLineEdit,
+    QApplication, QCheckBox, QDialog, QDialogButtonBox, QFrame, QHBoxLayout, QLabel, QLineEdit,
     QMessageBox, QPushButton, QTextEdit, QVBoxLayout, QWidget,
 )
 
 from .actions import ActionPermissions, WindowsController
-from .config import APP_VERSION, load_settings
+from .config import APP_VERSION, PROFILE_DIR, load_settings
+from .discord_presence import APPLICATION_ID, DiscordPresence
 from .models import AudioMeter, OrbitEvents, OrbitTurn
 from .theme import STYLESHEET, apply_window_frame
 from .visuals import OrbitVisual
@@ -34,6 +35,9 @@ class OrbitWindow(QWidget):
         self.approval_dialog = None
         self.last_reply = ""
         self.reply_dialog = None
+        self.discord_dialog = None
+        self.discord_settings = QSettings(str(PROFILE_DIR / "discord.ini"), QSettings.Format.IniFormat)
+        self.presence = DiscordPresence(self)
         self.notices = {}
         self.permissions = ActionPermissions()
         self.meter = AudioMeter()
@@ -52,6 +56,8 @@ class OrbitWindow(QWidget):
         self.workers = OrbitWorkers(settings or load_settings(), self.events, self.meter,
                                     controller if controller is not None else WindowsController(), voice)
         self.workers.start()
+        if self.discord_settings.value("enabled", False, type=bool):
+            self.presence.start(APPLICATION_ID)
 
     def showEvent(self, event):
         super().showEvent(event)
@@ -66,6 +72,11 @@ class OrbitWindow(QWidget):
         brand = QLabel("ORBIT", objectName="Brand")
         header.addWidget(brand)
         header.addStretch()
+        discord = QPushButton("Discord", objectName="Reply")
+        discord.setAccessibleName("Discord activity settings")
+        discord.clicked.connect(self.show_discord)
+        header.addWidget(discord)
+        header.addSpacing(14)
         header.addWidget(QLabel(f"v{APP_VERSION}", objectName="Version"))
         root.addLayout(header)
 
@@ -290,6 +301,51 @@ class OrbitWindow(QWidget):
         if QApplication.platformName() == "windows":
             apply_window_frame(dialog)
 
+    def show_discord(self):
+        if self.discord_dialog is not None:
+            self.discord_dialog.raise_()
+            self.discord_dialog.activateWindow()
+            return
+        dialog = QDialog(self)
+        self.discord_dialog = dialog
+        dialog.setWindowTitle("Discord activity")
+        dialog.setAttribute(Qt.WidgetAttribute.WA_DeleteOnClose)
+        dialog.finished.connect(lambda: setattr(self, "discord_dialog", None))
+        layout = QVBoxLayout(dialog)
+        hint = QLabel("Show ORBIT as an activity while the app is open. "
+                      "Your conversations and saved memories stay private.")
+        hint.setWordWrap(True)
+        layout.addWidget(hint)
+        enabled = QCheckBox("Share activity with Discord")
+        enabled.setChecked(self.discord_settings.value("enabled", False, type=bool))
+        layout.addWidget(enabled)
+        feedback = QLabel(self.presence.status)
+        feedback.setWordWrap(True)
+        layout.addWidget(feedback)
+        self.presence.status_changed.connect(feedback.setText)
+        enabled.toggled.connect(lambda selected: feedback.setText(
+            "Save to enable activity sharing" if selected and not self.presence.application_id else self.presence.status
+        ))
+        buttons = QDialogButtonBox(QDialogButtonBox.StandardButton.Save | QDialogButtonBox.StandardButton.Cancel)
+        buttons.rejected.connect(dialog.reject)
+        layout.addWidget(buttons)
+
+        def save():
+            self.discord_settings.setValue("enabled", enabled.isChecked())
+            self.discord_settings.sync()
+            if enabled.isChecked():
+                if not self.presence.application_id:
+                    self.presence.start(APPLICATION_ID)
+            else:
+                self.presence.stop()
+            dialog.accept()
+
+        buttons.accepted.connect(save)
+        dialog.resize(410, dialog.sizeHint().height())
+        dialog.open()
+        if QApplication.platformName() == "windows":
+            apply_window_frame(dialog)
+
     def on_reply_closed(self):
         self.reply_dialog = None
 
@@ -308,6 +364,7 @@ class OrbitWindow(QWidget):
 
     def closeEvent(self, event):
         self.closing = True
+        self.presence.stop()
         self.turn = None
         if self.approval_dialog is not None:
             self.approval_dialog.reject()

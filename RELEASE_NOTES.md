@@ -1,10 +1,14 @@
-# ORBIT Desktop 0.7.0 beta 1
+# ORBIT Desktop 0.7.0 beta 2
 
-ORBIT is a Windows 11 assistant you type to and hear in a British voice. This is the first public beta, with the animated orb, local AI, saved facts and confirmation for Windows actions.
+This beta adds an installer for Windows 11 x64. Setup installs for your Windows account and downloads a private Python runtime on first install. It creates a Start menu entry and offers a desktop shortcut, checked by default.
+
+Open **Discord** in ORBIT and enable activity sharing to show **Playing ORBIT** on your Discord profile while the app is running. Discord desktop and its activity-sharing setting control visibility.
 
 ## Install
 
-Download the Windows ZIP and extract it. Install Python 3.12 and Ollama, run **Setup_ORBIT.bat**, and pull the default model with `ollama pull qwen2.5:1.5b`. Launch with **Run_ORBIT.bat**. The ZIP includes setup instructions and a system checker. Voice assets are optional and can be downloaded during setup.
+Download and run the **Windows x64 Setup EXE**. For local AI, install Ollama and run `ollama pull qwen2.5:1.5b` in PowerShell. To enable Kokoro, use **Download Kokoro voice** in the ORBIT Desktop Start menu folder. The source ZIP remains available.
+
+Run a newer installer to update an installed copy. Setup uses the existing location and preserves the public ORBIT profile. The installer is unsigned. The attached SHA-256 file lets you verify the download against this release.
 
 ## Beta notes
 

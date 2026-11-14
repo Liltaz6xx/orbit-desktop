@@ -29,6 +29,14 @@ VOICE_SPEED = 0.90
 AUDIO_LEVEL_GAIN = 9.0
 
 
+def voice_files() -> tuple[Path, Path]:
+    profile_voice = PROFILE_DIR / "voice"
+    local = (profile_voice / VOICE_MODEL.name, profile_voice / VOICE_LIBRARY.name)
+    if all(path.is_file() for path in (VOICE_MODEL, VOICE_LIBRARY)) and not all(path.is_file() for path in local):
+        return VOICE_MODEL, VOICE_LIBRARY
+    return local
+
+
 class ConfigError(ValueError):
     """A setting needs to be corrected before starting ORBIT."""
 

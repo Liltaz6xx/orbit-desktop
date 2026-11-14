@@ -1,5 +1,12 @@
 # ORBIT changelog
 
+## 0.7.0-beta.2
+
+- Add a per-user Windows 11 x64 Setup EXE with a private Python runtime and verified dependencies.
+- Upgrade installed copies in place and keep memories, settings and voice downloads in the user profile.
+- Create a Start menu entry and offer a desktop shortcut selected by default on first install.
+- Add opt-in Discord activity sharing through the local desktop app.
+
 ## 0.7.0-beta.1
 
 - First public Windows beta of ORBIT Desktop.

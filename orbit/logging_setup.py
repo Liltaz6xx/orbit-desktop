@@ -1,6 +1,7 @@
 """Local diagnostic logging with bounded retention."""
 
 import logging
+import sys
 from logging.handlers import RotatingFileHandler
 
 from .config import DATA_DIR
@@ -14,9 +15,10 @@ def configure_logging() -> None:
         "%(asctime)s %(levelname)s %(name)s [%(threadName)s] %(message)s",
         datefmt="%Y-%m-%dT%H:%M:%S",
     )
-    console = logging.StreamHandler()
-    console.setFormatter(formatter)
-    logger.addHandler(console)
+    if sys.stderr is not None:
+        console = logging.StreamHandler()
+        console.setFormatter(formatter)
+        logger.addHandler(console)
     logger.setLevel(logging.INFO)
     logger.propagate = False
     try:

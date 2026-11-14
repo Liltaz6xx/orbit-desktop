@@ -4,6 +4,8 @@
 *.py text eol=lf
 *.yml text eol=lf
 *.md text eol=lf
+*.iss text eol=lf
+installer/*.txt text eol=lf
 *.png binary
 *.ico binary
 *.jpg binary

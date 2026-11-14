@@ -6,7 +6,7 @@ import os
 import re
 from time import perf_counter
 
-from .config import VOICE_LANGUAGE, VOICE_LIBRARY, VOICE_MODEL, VOICE_NAME, VOICE_SPEED
+from .config import VOICE_LANGUAGE, VOICE_NAME, VOICE_SPEED, voice_files
 
 log = logging.getLogger(__name__)
 SENTENCE = re.compile(r"""[.!?]+['"”)]*(?=\s)""")
@@ -108,7 +108,8 @@ class OrbitVoice:
     def load(self):
         if self.engine is not None:
             return
-        missing = [path.name for path in (VOICE_MODEL, VOICE_LIBRARY) if not path.is_file()]
+        model, library = voice_files()
+        missing = [path.name for path in (model, library) if not path.is_file()]
         if missing:
             raise VoiceUnavailable("Missing voice assets: " + ", ".join(missing))
         try:
@@ -123,10 +124,10 @@ class OrbitVoice:
         if cpu_only and not os.getenv("ONNX_PROVIDER"):
             options = ort.SessionOptions()
             options.intra_op_num_threads = min(8, os.cpu_count() or 1)
-            session = ort.InferenceSession(str(VOICE_MODEL), options, providers=["CPUExecutionProvider"])
-            self.engine = Kokoro.from_session(session, str(VOICE_LIBRARY))
+            session = ort.InferenceSession(str(model), options, providers=["CPUExecutionProvider"])
+            self.engine = Kokoro.from_session(session, str(library))
         else:
-            self.engine = Kokoro(str(VOICE_MODEL), str(VOICE_LIBRARY))
+            self.engine = Kokoro(str(model), str(library))
         self.parameters = set(inspect.signature(self.engine.create).parameters)
         log.info("event=kokoro_loaded elapsed_ms=%.0f", (perf_counter() - started) * 1000)
 
