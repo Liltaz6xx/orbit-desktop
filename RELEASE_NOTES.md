@@ -1,4 +1,4 @@
-# ORBIT Desktop 0.7.0 beta 4
+# ORBIT Desktop 0.7.0 beta 5
 
 Download and run the **Windows x64 Setup EXE**. Setup installs Python and its dependencies, Ollama, Qwen2.5 1.5B, and the Kokoro voice as needed. A clean installation downloads about 3 GB. Open ORBIT from the Start menu or the desktop shortcut selected by default.
 

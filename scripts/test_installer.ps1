@@ -25,7 +25,13 @@ New-Item -ItemType Directory -Path $work | Out-Null
 function Invoke-Setup($Path, $Name, [string[]]$Extra = @()) {
     $log = Join-Path $work "$Name.log"
     $arguments = @('/VERYSILENT', '/SUPPRESSMSGBOXES', '/NORESTART', ('/LOG="' + $log + '"')) + $Extra
-    $process = Start-Process -FilePath $Path -ArgumentList $arguments -WindowStyle Hidden -Wait -PassThru
+    $process = Start-Process -FilePath $Path -ArgumentList $arguments -WindowStyle Hidden -PassThru
+    # Ollama's tray process remains open after its installer exits. Wait for
+    # ORBIT Setup itself so that the running server does not hold this test open.
+    if (-not $process.WaitForExit(900000)) {
+        if (Test-Path -LiteralPath $log) { Get-Content -LiteralPath $log -Tail 70 }
+        throw "$Name did not exit within 15 minutes."
+    }
     if ($process.ExitCode -ne 0) {
         if (Test-Path -LiteralPath $log) { Get-Content -LiteralPath $log -Tail 70 }
         throw "$Name failed with exit code $($process.ExitCode)."
