@@ -50,7 +50,9 @@ Source: "{#UvNotices}"; DestName: "uv-NOTICES.txt"; DestDir: "{app}"; Flags: ign
 [Icons]
 Name: "{userprograms}\ORBIT Desktop\ORBIT Desktop"; Filename: "{code:EnvironmentPath}\Scripts\pythonw.exe"; Parameters: "-E -s -B ""{app}\main.py"""; WorkingDir: "{app}"; IconFilename: "{app}\assets\orbit.ico"
 Name: "{userdesktop}\ORBIT Desktop"; Filename: "{code:EnvironmentPath}\Scripts\pythonw.exe"; Parameters: "-E -s -B ""{app}\main.py"""; WorkingDir: "{app}"; IconFilename: "{app}\assets\orbit.ico"; Tasks: desktopicon
-Name: "{userprograms}\ORBIT Desktop\Download Kokoro voice"; Filename: "{sys}\WindowsPowerShell\v1.0\powershell.exe"; Parameters: "-NoProfile -NoExit -ExecutionPolicy Bypass -File ""{app}\scripts\download_voice_models.ps1"" -AssetsDirectory ""{localappdata}\ORBIT Desktop\voice"""; WorkingDir: "{app}"; IconFilename: "{app}\assets\orbit.ico"
+
+[InstallDelete]
+Type: files; Name: "{userprograms}\ORBIT Desktop\Download Kokoro voice.lnk"
 
 [Run]
 Filename: "{code:EnvironmentPath}\Scripts\pythonw.exe"; Parameters: "-E -s -B ""{app}\main.py"""; WorkingDir: "{app}"; Description: "Launch ORBIT Desktop"; Flags: postinstall nowait skipifsilent
@@ -67,10 +69,14 @@ const
   PythonUrl = 'https://github.com/astral-sh/python-build-standalone/releases/download/20261110/' +
     'cpython-3.12.16%2B20261110-x86_64-pc-windows-msvc-install_only_stripped.tar.gz';
   PythonHash = '355ee61b8207b91574491b1c6dc9b0ebb4408fc56bfafe498f3ef439314b52dc';
+  OllamaUrl = 'https://github.com/ollama/ollama/releases/download/v0.40.16/OllamaSetup.exe';
+  OllamaHash = '84db4f756ddc9e091142a85cdc0f7ae5db68bc9b3e075f114388b326f8ed912d';
+  OllamaMissing = 10;
   RegistryKey = 'Software\ORBIT Desktop';
 
 var
   Progress: TOutputMarqueeProgressWizardPage;
+  Downloads: TDownloadWizardPage;
 
 function InitializeSetup(): Boolean;
 var
@@ -92,6 +98,9 @@ procedure InitializeWizard();
 begin
   Progress := CreateOutputMarqueeProgressPage('Preparing ORBIT Desktop',
     'Setting up the private Python runtime. The first installation downloads its dependencies.');
+  Downloads := CreateDownloadPage('Downloading Ollama',
+    'Setup downloads the official Ollama installer when Ollama is missing.', nil);
+  Downloads.ShowBaseNameInsteadOfUrl := True;
 end;
 
 function EnvironmentPath(Param: String): String;
@@ -135,7 +144,7 @@ begin
   end;
 end;
 
-function PrepareToInstall(var NeedsRestart: Boolean): String;
+function PrepareRuntime(): String;
 var
   UV, Lock, InstallPython, Interpreter, Env, Python: String;
 begin
@@ -172,6 +181,105 @@ begin
       Result := 'The Python environment did not pass its dependency check. See the Setup log for details.'
     else if not SaveStringToFile(Env + '\orbit-runtime.ready', '{#RuntimeId}', False) then
       Result := 'Setup could not record the verified runtime. Check the installation folder permissions.';
+  finally
+    Progress.Hide;
+  end;
+end;
+
+procedure ShowProvisioning(const Line: String; const ReadError, FirstLine: Boolean);
+begin
+  Log(Line);
+  if (not ReadError) and (Line <> '') then
+  begin
+    Progress.SetText(Progress.Caption, Line);
+    Progress.Animate;
+  end;
+end;
+
+function RunModelSetup(Python, SourceDir: String): Integer;
+var
+  Code: Integer;
+begin
+  if ExecAndLogOutput(Python, '-E -s -B -m orbit.ollama_setup', SourceDir,
+      SW_SHOWNORMAL, ewWaitUntilTerminated, Code, @ShowProvisioning) then
+    Result := Code
+  else
+  begin
+    Log(Format('Could not run the Ollama check (%d).', [Code]));
+    Result := -1;
+  end;
+end;
+
+function InstallOllama(): Boolean;
+var
+  Code: Integer;
+  Marker: String;
+begin
+  Downloads.Clear;
+  Downloads.Add(OllamaUrl, 'OllamaSetup.exe', OllamaHash);
+  Downloads.Show;
+  try
+    Downloads.Download;
+  finally
+    Downloads.Hide;
+  end;
+
+  Progress.SetText('Installing Ollama', 'Running the official installer for this Windows account.');
+  Progress.Animate;
+  Marker := ExpandConstant('{localappdata}\Ollama');
+  if ForceDirectories(Marker) then
+    SaveStringToFile(Marker + '\upgraded', 'ORBIT setup', False);
+  // Do not capture child stdout: the vendor installer can start a persistent tray app.
+  Result := Exec(ExpandConstant('{tmp}\OllamaSetup.exe'), '/VERYSILENT /SUPPRESSMSGBOXES /NORESTART',
+    ExpandConstant('{tmp}'), SW_HIDE, ewWaitUntilTerminated, Code) and (Code = 0);
+  if not Result then
+  begin
+    DeleteFile(Marker + '\upgraded');
+    Log(Format('Ollama installer failed (%d).', [Code]));
+  end;
+end;
+
+function PrepareToInstall(var NeedsRestart: Boolean): String;
+var
+  Code: Integer;
+  Python, SourceDir, VoicePath: String;
+begin
+  Result := PrepareRuntime();
+  if Result <> '' then
+    exit;
+
+  Python := EnvironmentPath('') + '\Scripts\python.exe';
+  SourceDir := ExpandConstant('{tmp}\') + '{app}';
+  VoicePath := ExpandConstant('{localappdata}\ORBIT Desktop\voice');
+
+  Progress.SetText('Preparing ORBIT Desktop', 'Checking Ollama and the local language model.');
+  Progress.Show;
+  try
+    try
+      Progress.Animate;
+      ExtractTemporaryFiles('{app}\orbit\*.py');
+      ExtractTemporaryFiles('{app}\scripts\download_voice_models.ps1');
+      Code := RunModelSetup(Python, SourceDir);
+      if Code = OllamaMissing then
+      begin
+        if not InstallOllama() then
+        begin
+          Result := 'The Ollama installer did not finish. Rerun Setup to retry.';
+          exit;
+        end;
+        Code := RunModelSetup(Python, SourceDir);
+      end;
+      if Code <> 0 then
+        Result := 'Setup could not prepare Ollama or its model. See the Setup log, then rerun Setup.'
+      else if not ExecAndLogOutput(ExpandConstant('{sys}\WindowsPowerShell\v1.0\powershell.exe'),
+        '-NoProfile -NonInteractive -ExecutionPolicy Bypass -File "' + SourceDir +
+        '\scripts\download_voice_models.ps1" -AssetsDirectory "' + VoicePath + '"',
+        SourceDir, SW_SHOWNORMAL, ewWaitUntilTerminated, Code, @ShowProvisioning) or (Code <> 0) then
+        Result := 'Setup could not download or verify the Kokoro voice assets. Rerun Setup to retry.';
+    except
+      Log(GetExceptionMessage);
+      Result := 'Setup could not download a dependency. Check your connection and free disk space, then rerun Setup.';
+    end;
   finally
     Progress.Hide;
   end;

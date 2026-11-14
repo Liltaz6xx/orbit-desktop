@@ -4,15 +4,15 @@ from itertools import count
 from time import perf_counter
 import logging
 
-from PySide6.QtCore import QEvent, QSettings, Qt
+from PySide6.QtCore import QEvent, Qt
 from PySide6.QtGui import QKeySequence, QShortcut
 from PySide6.QtWidgets import (
-    QApplication, QCheckBox, QDialog, QDialogButtonBox, QFrame, QHBoxLayout, QLabel, QLineEdit,
+    QApplication, QDialog, QDialogButtonBox, QFrame, QHBoxLayout, QLabel, QLineEdit,
     QMessageBox, QPushButton, QTextEdit, QVBoxLayout, QWidget,
 )
 
 from .actions import ActionPermissions, WindowsController
-from .config import APP_VERSION, PROFILE_DIR, load_settings
+from .config import APP_VERSION, load_settings
 from .discord_presence import APPLICATION_ID, DiscordPresence
 from .models import AudioMeter, OrbitEvents, OrbitTurn
 from .theme import STYLESHEET, apply_window_frame
@@ -36,7 +36,6 @@ class OrbitWindow(QWidget):
         self.last_reply = ""
         self.reply_dialog = None
         self.discord_dialog = None
-        self.discord_settings = QSettings(str(PROFILE_DIR / "discord.ini"), QSettings.Format.IniFormat)
         self.presence = DiscordPresence(self)
         self.notices = {}
         self.permissions = ActionPermissions()
@@ -56,7 +55,7 @@ class OrbitWindow(QWidget):
         self.workers = OrbitWorkers(settings or load_settings(), self.events, self.meter,
                                     controller if controller is not None else WindowsController(), voice)
         self.workers.start()
-        if self.discord_settings.value("enabled", False, type=bool):
+        if QApplication.platformName() == "windows":
             self.presence.start(APPLICATION_ID)
 
     def showEvent(self, event):
@@ -73,7 +72,7 @@ class OrbitWindow(QWidget):
         header.addWidget(brand)
         header.addStretch()
         discord = QPushButton("Discord", objectName="Reply")
-        discord.setAccessibleName("Discord activity settings")
+        discord.setAccessibleName("Discord activity status")
         discord.clicked.connect(self.show_discord)
         header.addWidget(discord)
         header.addSpacing(14)
@@ -312,35 +311,18 @@ class OrbitWindow(QWidget):
         dialog.setAttribute(Qt.WidgetAttribute.WA_DeleteOnClose)
         dialog.finished.connect(lambda: setattr(self, "discord_dialog", None))
         layout = QVBoxLayout(dialog)
-        hint = QLabel("Show ORBIT as an activity while the app is open. "
-                      "Your conversations and saved memories stay private.")
+        hint = QLabel("ORBIT advertises its activity while the app is open. "
+                      "Visibility follows the activity-sharing settings in Discord. "
+                      "Conversations and saved memories stay local.")
         hint.setWordWrap(True)
         layout.addWidget(hint)
-        enabled = QCheckBox("Share activity with Discord")
-        enabled.setChecked(self.discord_settings.value("enabled", False, type=bool))
-        layout.addWidget(enabled)
         feedback = QLabel(self.presence.status)
         feedback.setWordWrap(True)
         layout.addWidget(feedback)
         self.presence.status_changed.connect(feedback.setText)
-        enabled.toggled.connect(lambda selected: feedback.setText(
-            "Save to enable activity sharing" if selected and not self.presence.application_id else self.presence.status
-        ))
-        buttons = QDialogButtonBox(QDialogButtonBox.StandardButton.Save | QDialogButtonBox.StandardButton.Cancel)
-        buttons.rejected.connect(dialog.reject)
+        buttons = QDialogButtonBox(QDialogButtonBox.StandardButton.Close)
+        buttons.rejected.connect(dialog.close)
         layout.addWidget(buttons)
-
-        def save():
-            self.discord_settings.setValue("enabled", enabled.isChecked())
-            self.discord_settings.sync()
-            if enabled.isChecked():
-                if not self.presence.application_id:
-                    self.presence.start(APPLICATION_ID)
-            else:
-                self.presence.stop()
-            dialog.accept()
-
-        buttons.accepted.connect(save)
         dialog.resize(410, dialog.sizeHint().height())
         dialog.open()
         if QApplication.platformName() == "windows":

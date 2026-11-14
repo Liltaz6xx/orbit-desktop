@@ -72,9 +72,10 @@ Set-Content -LiteralPath $notices -Encoding utf8 -Value @("uv $uvVersion", 'http
 
 $script = Join-Path $Root 'installer/orbit.iss'
 $lock = Join-Path $Root 'installer/requirements-win-x64.txt'
-# The runtime changes when its locked wheels, Python build or provisioning code change.
-$runtime = ((Get-FileHash -LiteralPath $lock).Hash.Substring(0, 12) + '-' +
-    (Get-FileHash -LiteralPath $script).Hash.Substring(0, 12) + "-uv$uvVersion").ToLowerInvariant()
+# Changing app files alone does not require a new Python environment.
+$pythonVersion = [regex]::Match((Get-Content -LiteralPath $script -Raw), "PythonArchive = 'cpython-([\d.]+)-").Groups[1].Value
+if (-not $pythonVersion) { throw 'Could not determine the installer Python version.' }
+$runtime = ((Get-FileHash -LiteralPath $lock).Hash.Substring(0, 12) + "-python$pythonVersion-uv$uvVersion").ToLowerInvariant()
 
 $compilerArgs = @('/Qp', "/O$OutputDirectory", "/DOrbitVersion=$version",
     "/DWindowsVersion=$windowsVersion", "/DUvExe=$($uv.FullName)", "/DUvNotices=$notices",

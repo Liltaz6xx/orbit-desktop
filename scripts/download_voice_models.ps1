@@ -47,7 +47,9 @@ foreach ($file in $files) {
             throw "SHA-256 verification failed for $($file.Name). Expected $($file.Sha256); got $actual."
         }
         if (Test-Path -LiteralPath $destination -PathType Leaf) {
-            [IO.File]::Replace($temp, $destination, $null)
+            $backup = "$temp.bak"
+            [IO.File]::Replace($temp, $destination, $backup)
+            Remove-Item -LiteralPath $backup -Force
         }
         else {
             [IO.File]::Move($temp, $destination)

@@ -63,6 +63,10 @@ commit. The ZIP works with the same setup instructions as the repository.
 
 The installer provisions a private Python runtime and installs wheels from
 installer/requirements-win-x64.txt with SHA-256 verification. A setup run
-reuses the runtime when the lock file and provisioning code match. Keep
+reuses the runtime when the Python version and lock file match. It uses
+Ollama's loopback API to provision the default model and installs Ollama
+with the official, hash-pinned EXE if it cannot find an existing installation.
+Kokoro assets are verified and stored in the Windows profile.
+Keep
 the Inno Setup AppId stable so Windows detects upgrades. Run the installer
 test only on a disposable Windows runner or Windows Sandbox account.

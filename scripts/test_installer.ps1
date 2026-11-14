@@ -34,7 +34,7 @@ function Invoke-Setup($Path, $Name, [string[]]$Extra = @()) {
 }
 
 try {
-    $null = Invoke-Setup $previousPath 'fresh' @(('/DIR="' + $appDir + '"'))
+    $freshLog = Invoke-Setup $previousPath 'fresh' @(('/DIR="' + $appDir + '"'))
     if (-not (Test-Path -LiteralPath $desktop)) { throw 'Fresh install did not create the default desktop shortcut.' }
     $startMenu = Join-Path $menu 'ORBIT Desktop.lnk'
     if (-not (Test-Path -LiteralPath $startMenu)) { throw 'No Start menu entry.' }
@@ -86,6 +86,16 @@ MemoryStore(DATABASE_PATH).save_memory("The upgrade preserves this memory")
     if (-not (Select-String -LiteralPath $upgradeLog -Pattern 'Reusing the verified ORBIT runtime' -Quiet)) {
         throw 'Upgrade did not reuse the verified runtime.'
     }
+    if (-not (Select-String -LiteralPath $upgradeLog -Pattern 'Reusing installed Ollama model' -Quiet) -or
+        -not (Select-String -LiteralPath $upgradeLog -SimpleMatch 'Already present: voices-v1.0.bin' -Quiet)) {
+        throw 'Setup did not reuse the provisioned model and voice files.'
+    }
+    if (-not $PreviousInstaller -and
+        -not (Select-String -LiteralPath $freshLog -Pattern 'Kokoro voice assets are ready' -Quiet)) {
+        throw 'Fresh install did not provision the Kokoro voice.'
+    }
+    $desktopLink = $shell.CreateShortcut($desktop)
+    $python = Join-Path (Split-Path -Parent $desktopLink.TargetPath) 'python.exe'
     if (-not (Test-Path -LiteralPath $voiceMarker) -or (Get-FileHash -LiteralPath $memoryFile).Hash -ne $memoryHash -or
         (Get-FileHash -LiteralPath $settingsFile).Hash -ne $settingsHash) {
         throw 'Upgrade changed the user profile.'

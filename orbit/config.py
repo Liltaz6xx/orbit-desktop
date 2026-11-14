@@ -18,6 +18,8 @@ PROFILE_DIR = Path(os.environ.get("LOCALAPPDATA") or Path.home() / "AppData" / "
 DATA_DIR = PROFILE_DIR
 DATABASE_PATH = PROFILE_DIR / "orbit_memory.sqlite3"
 CONFIG_PATH = PROFILE_DIR / "orbit.toml"
+DEFAULT_OLLAMA_URL = "http://127.0.0.1:11434"
+DEFAULT_MODEL = "qwen2.5:1.5b"
 MAX_CONVERSATION_PAIRS = 10
 MAX_RELEVANT_MEMORIES = 8
 MAX_MEMORY_LENGTH = 500
@@ -43,8 +45,8 @@ class ConfigError(ValueError):
 
 @dataclass(frozen=True, slots=True)
 class Settings:
-    ollama_url: str = "http://127.0.0.1:11434"
-    model: str = "qwen2.5:1.5b"
+    ollama_url: str = DEFAULT_OLLAMA_URL
+    model: str = DEFAULT_MODEL
     timeout: float = 180
     max_tokens: int = 220
     database_path: Path = DATABASE_PATH

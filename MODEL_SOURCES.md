@@ -1,6 +1,6 @@
 # Third-party software and models
 
-ORBIT installs Python packages through pip. Model weights are downloaded separately by users.
+The Windows installer downloads Ollama and the required weights during setup. The source ZIP supports manual installation.
 
 | Component | Use in ORBIT | Upstream terms |
 | --- | --- | --- |
@@ -10,7 +10,7 @@ ORBIT installs Python packages through pip. Model weights are downloaded separat
 | kokoro-onnx | ONNX inference interface and model exports | [MIT library licence and model terms](https://github.com/thewh1teagle/kokoro-onnx#license) |
 | PySide6 Essentials | Qt desktop interface | [Qt for Python licensing](https://doc.qt.io/qtforpython-6/licenses.html) |
 
-Setup can fetch `kokoro-v1.0.int8.onnx` and `voices-v1.0.bin` after you opt in. The downloader verifies each file against its expected SHA-256 hash. [Kokoro ONNX voice assets](https://github.com/thewh1teagle/kokoro-onnx/releases/tag/model-files-v1.1)
+Setup uses the [official Ollama installer](https://github.com/ollama/ollama/releases/tag/v0.40.16) and pulls the default model through Ollama. The Kokoro downloader verifies both voice files against their expected SHA-256 hashes. [Kokoro ONNX voice assets](https://github.com/thewh1teagle/kokoro-onnx/releases/tag/model-files-v1.1)
 
 Every separately installed model or library remains subject to its upstream terms.
 

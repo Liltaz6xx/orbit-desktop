@@ -9,24 +9,20 @@ Created by [Liltaz6xx](https://github.com/Liltaz6xx). ORBIT calls the operator o
 ## Install or update on Windows 11
 
 1. Download the **Windows x64 Setup EXE** and its SHA-256 checksum. The installer is unsigned, so Windows SmartScreen may display a warning. [GitHub Releases](https://github.com/Liltaz6xx/orbit-desktop/releases)
-2. Run Setup. It installs for your Windows account in %LOCALAPPDATA%\Programs\ORBIT Desktop and downloads a private Python runtime and verified dependencies. The Start menu shortcut is always created and the desktop shortcut box is checked on a fresh install.
-3. Install and start Ollama for Windows. In PowerShell, install the default model. [Ollama for Windows](https://ollama.com/download/windows) · [Model page](https://ollama.com/library/qwen2.5:1.5b)
-
-   ~~~powershell
-   ollama pull qwen2.5:1.5b
-   ~~~
-
-4. Open **ORBIT Desktop**. Press **Enter** to send, **Esc** to stop, or **Read reply** to open the latest answer. To enable Kokoro, choose **Download Kokoro voice** in the ORBIT Desktop Start menu folder and reopen ORBIT after the download.
+2. Run Setup. It installs for your Windows account in %LOCALAPPDATA%\Programs\ORBIT Desktop and sets up Python, Ollama, Qwen2.5 1.5B, and the Kokoro voice. A fresh setup needs internet and downloads about 3 GB. Setup reuses existing dependencies and verified voice files. [Ollama for Windows](https://docs.ollama.com/windows) · [Default model](https://ollama.com/library/qwen2.5:1.5b)
+3. Open **ORBIT Desktop** from the Start menu or the optional desktop shortcut, which is checked on a fresh install. Press **Enter** to send, **Esc** to stop, or **Read reply** to open the latest answer.
 
 For updates, download and run the newer Setup EXE. Setup finds the existing installation and replaces its program files. It remembers the desktop shortcut choice. Settings, memories and downloaded voice files live in the separate ORBIT Desktop profile and survive updates and uninstall.
 
+Setup preserves any custom Ollama address or model selected in your profile. Uninstalling ORBIT leaves Ollama and its model downloads available to other apps.
+
 ## Share your activity on Discord
 
-Open the Discord desktop app and sign in. In ORBIT, select **Discord**, check **Share activity with Discord**, and select **Save**. Discord can show **Playing ORBIT** while the app is open if activity sharing is allowed in Discord. Turn the option off in ORBIT to clear its activity. Sharing starts off on every new profile. Prompts, replies and saved memories stay local. [Discord activity sharing](https://support.discord.com/hc/en-us/articles/7931156448919-Activity-Sharing-on-Discord-FAQ)
+ORBIT automatically advertises **Playing ORBIT** while it is open and Discord desktop is running. The **Discord** button shows its connection status. Discord's activity-sharing settings control visibility. Prompts, replies and saved memories stay local. [Discord activity sharing](https://support.discord.com/hc/en-us/articles/7931156448919-Activity-Sharing-on-Discord-FAQ)
 
 ## Run from source
 
-Extract the Windows ZIP or clone the repository. Install 64-bit Python 3.12, run **Setup_ORBIT.bat**, then **Run_ORBIT.bat**. The source copy and installer edition share the public ORBIT Desktop profile for your Windows account. [Python downloads](https://www.python.org/downloads/windows/)
+Extract the Windows ZIP or clone the repository. Install 64-bit Python 3.12 and Ollama, pull the configured model in Ollama, run **Setup_ORBIT.bat**, then **Run_ORBIT.bat**. The source copy and installer edition share the public ORBIT Desktop profile for your Windows account. [Python downloads](https://www.python.org/downloads/windows/)
 
 ## Try these commands
 

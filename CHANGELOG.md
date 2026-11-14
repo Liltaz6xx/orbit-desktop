@@ -1,5 +1,11 @@
 # ORBIT changelog
 
+## 0.7.0-beta.3
+
+- Provision Ollama, Qwen2.5 1.5B, and Kokoro from the Windows installer.
+- Reuse installed dependencies and preserve the ORBIT and Ollama profiles.
+- Advertise Discord activity automatically and show its connection status.
+
 ## 0.7.0-beta.2
 
 - Add a per-user Windows 11 x64 Setup EXE with a private Python runtime and verified dependencies.

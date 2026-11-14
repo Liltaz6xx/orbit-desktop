@@ -1,4 +1,4 @@
-"""Opt-in Discord activity via the local desktop client's named pipe."""
+"""Discord activity via the local desktop client's named pipe."""
 
 import json
 import logging

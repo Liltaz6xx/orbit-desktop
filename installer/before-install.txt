@@ -1,13 +1,11 @@
-ORBIT Desktop runs in your Windows account. Setup downloads a private copy of
-Python and the required libraries on first install. It needs an Internet
-connection and about 450 MB of free disk space.
+ORBIT Desktop runs in your Windows account. Setup downloads Python, the
+required libraries, Ollama, the Qwen2.5 1.5B language model and the Kokoro
+voice files as needed. A fresh installation downloads about 3 GB. Make sure
+you have an Internet connection and several GB of free disk space.
 
-For local AI, install and start Ollama, then run this command in PowerShell:
-
-    ollama pull qwen2.5:1.5b
-
-Windows speech is available immediately. To add the Kokoro voice, choose
-Download Kokoro voice from the ORBIT Desktop folder on your Start menu.
+While ORBIT is open, it advertises "Playing ORBIT" to the Discord desktop
+client if it is running. Discord's activity-sharing settings control
+visibility. Your conversations and saved memories stay local.
 
 To update ORBIT Desktop, download and run the newer Setup EXE. Close ORBIT
 when Setup asks. Your saved memories and settings remain in your local profile.

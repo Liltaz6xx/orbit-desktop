@@ -25,6 +25,10 @@ class OllamaError(RuntimeError):
     """A safe, user-facing explanation of a failed Ollama request."""
 
 
+class OllamaModelMissing(OllamaError):
+    """The server is reachable but does not have the selected model."""
+
+
 class ResponseReader(io.RawIOBase):
     """Bound Windows socket waits so cancelling also works during a stalled read."""
 
@@ -118,7 +122,7 @@ class OllamaClient:
             connection.request("GET" if body is None else "POST", path, body=body, headers=headers)
             with connection.getresponse() as response:
                 if response.status == 404 and path == "/api/chat":
-                    raise OllamaError(self.missing_model())
+                    raise OllamaModelMissing(self.missing_model())
                 if response.status != 200:
                     raise OllamaError(f"Ollama returned HTTP {response.status}. Check the Ollama server log.")
                 yield response
@@ -170,7 +174,21 @@ class OllamaClient:
                 if item.get("remote_model") or item.get("remote_host"):
                     raise OllamaError("The configured model uses remote inference. Select an installed local model.")
                 return
-        raise OllamaError(self.missing_model())
+        raise OllamaModelMissing(self.missing_model())
+
+    def pull_model(self, progress):
+        with self.request("/api/pull", payload={"model": self.settings.model, "stream": True},
+                          timeout=180) as response:
+            while raw := response.readline(MAX_FRAME_BYTES + 1):
+                if len(raw) > MAX_FRAME_BYTES:
+                    raise OllamaError("Ollama returned an oversized model download response.")
+                frame = json_object(raw)
+                if frame.get("error"):
+                    raise OllamaError("Ollama could not download the model. Check its log and available disk space.")
+                if frame.get("status") == "success":
+                    return
+                progress(frame)
+        raise OllamaError("Ollama ended the download before confirming success.")
 
     def stream(self, messages, callback, cancel):
         self.check_model(cancel)
