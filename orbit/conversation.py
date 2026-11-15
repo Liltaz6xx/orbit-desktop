@@ -29,8 +29,6 @@ class Conversation:
             self.events.subsystem.emit("memory", "Memory unavailable. Check the database path and permissions.")
 
     def answer(self, turn):
-        if turn.artifact_request is not None:
-            return self.prepare_artifact(turn, turn.artifact_request)
         message = turn.message
         name = turn.preferences.name
         if re.fullmatch(r"(?:what(?: is|'s) your name|who are you)[?.! ]*", message, re.I):

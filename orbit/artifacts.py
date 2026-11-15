@@ -78,7 +78,7 @@ REQUEST_KINDS = (
     ("flashcards", r"flash\s*cards?"),
     ("quiz", r"(?:practice\s+)?quiz|practice test|revision questions"),
     ("markdown", r"markdown(?: (?:document|file))?|[^\s]+\.md\b"),
-    ("document", r"text file|plain text|document|notes file|file|[^\s]+\.txt\b"),
+    ("document", r"text file|plain text|document|notes(?: file)?|file|[^\s]+\.txt\b"),
 )
 NUMBER_WORDS = {name: number for number, name in enumerate(
     "one two three four five six seven eight nine ten eleven twelve".split(), 1

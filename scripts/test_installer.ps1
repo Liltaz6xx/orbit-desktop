@@ -123,8 +123,6 @@ win = OrbitWindow(load_settings())
 win.show()
 if not win.visual.aurora.isValid():
     raise SystemExit("Setup did not install the animated orb background.")
-win.show_create()
-win.create_dialog.reject()
 for draft, writer in (
     (Artifact("word", "Installer smoke test", body="Example text."), write_document),
     (Artifact("presentation", "Installer smoke test", slides=(Slide("Example", ("Example point.",)),)), write_presentation),

@@ -107,11 +107,7 @@ class WindowTests(unittest.TestCase):
         output = Path(self.scratch.name) / "draft.md"
         draft = Artifact("study_guide", "Moon craters", body="Review the effect of impacts.")
         with patch("orbit.conversation.generate_artifact", return_value=draft) as generate:
-            self.win.show_create()
-            dialog = self.win.create_dialog
-            dialog.kind.setCurrentIndex(dialog.kind.findData("study_guide"))
-            dialog.prompt.setPlainText("Make a guide about Moon craters.")
-            dialog.accept_request()
+            self.send("Make revision notes about Moon craters.")
             self.until(lambda: self.win.last_artifact is draft and self.win.reply_dialog is not None)
             self.assertEqual(generate.call_args.args[1].kind, "study_guide")
         self.assertFalse(output.exists())
@@ -193,7 +189,8 @@ class WindowTests(unittest.TestCase):
         self.send("Who made you?")
         self.until(lambda: self.win.turn is None)
         self.assertIn("Liltaz6xx created ORBIT", self.win.last_reply)
-        self.assertTrue(self.win.reply.isVisible())
+        self.win.show_reply()
+        self.assertIsNotNone(self.win.reply_dialog)
         self.assertIn("Speech could not play", self.win.detail.text())
 
     def test_custom_name_and_macro_approval(self):

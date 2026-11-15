@@ -1,8 +1,8 @@
-# ORBIT Desktop 0.8.0
+# ORBIT Desktop 0.8.1
 
 ORBIT opens in borderless fullscreen with translucent controls and a live 3D orb. The orb rotates when idle, expands while thinking, and reacts to speech. Press **F11** to switch to a normal window. Turn off **Motion** in **Settings** to pause the ambient animation.
 
-Choose **Create** to draft a PowerPoint presentation, Word document, text file, Markdown document, study guide, flashcards or quiz. Attach local notes if you want ORBIT to use them. Review the output, then choose **Save as…** to write it to a new file. You can also ask directly, for example “Create a 5-slide PowerPoint about orbital mechanics.”
+Ask for files in the main prompt or by voice. Try “Create a 5-slide PowerPoint about orbital mechanics” or “Write revision notes about photosynthesis.” ORBIT opens the draft for review and saving. **Macros** is the only extra button beside the prompt. Press **Ctrl+H** for history or **Ctrl+R** to open the most recent reply or draft.
 
 ORBIT checks for updates on startup and shows a banner whenever a newer build is available. Click the banner to begin updating.
 

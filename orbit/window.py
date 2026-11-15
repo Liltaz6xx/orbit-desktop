@@ -43,7 +43,6 @@ class OrbitWindow(QWidget):
         self.approval_dialog = None
         self.last_reply = ""
         self.last_artifact = None
-        self.create_dialog = None
         self.reply_dialog = None
         self.discord_dialog = None
         self.settings_dialog = None
@@ -90,7 +89,7 @@ class OrbitWindow(QWidget):
         QShortcut(QKeySequence("Ctrl+H"), self, activated=self.show_history)
         QShortcut(QKeySequence("Ctrl+Shift+M"), self, activated=self.show_macros)
         QShortcut(QKeySequence("Ctrl+L"), self, activated=self.entry.setFocus)
-        QShortcut(QKeySequence("Ctrl+N"), self, activated=self.show_create)
+        QShortcut(QKeySequence("Ctrl+R"), self, activated=self.show_reply)
         QShortcut(QKeySequence("F11"), self, activated=self.toggle_fullscreen)
         self.workers = OrbitWorkers(self.settings, self.events, self.meter,
                                     controller if controller is not None else WindowsController(), voice)
@@ -207,24 +206,12 @@ class OrbitWindow(QWidget):
         footer = QHBoxLayout()
         footer.setSpacing(5)
         self.hint = QLabel("Enter to send", objectName="Hint")
-        create = self.header_button("Create", "create")
-        create.setToolTip("Create files, slides and revision material · Ctrl+N")
-        create.clicked.connect(self.show_create)
-        history = self.header_button("History", "history")
-        history.setToolTip("Chat history · Ctrl+H")
-        history.clicked.connect(self.show_history)
         macros = self.header_button("Macros", "macros")
         macros.setToolTip("Record and replay macros · Ctrl+Shift+M")
         macros.clicked.connect(self.show_macros)
-        self.reply = self.header_button("Read reply", "reply")
-        self.reply.clicked.connect(self.show_reply)
-        self.reply.hide()
-        footer.addWidget(create)
-        footer.addWidget(history)
         footer.addWidget(macros)
         footer.addStretch()
         footer.addWidget(self.hint)
-        footer.addWidget(self.reply)
         dock.addLayout(footer)
         self.center_row(root, self.composer)
         self.update_send()
@@ -268,7 +255,7 @@ class OrbitWindow(QWidget):
         active = self.turn is not None
         self.send.setText("Stop" if active else "Send")
         self.send.setEnabled(active or bool(self.entry.text().strip()))
-        self.hint.setText("Esc to stop" if active else "Enter to send")
+        self.hint.setText("Esc to stop" if active else "Ctrl+R · Reply" if self.last_reply else "Enter to send")
 
     def send_or_stop(self):
         if self.turn is not None:
@@ -282,15 +269,15 @@ class OrbitWindow(QWidget):
     def submit_spoken(self, message):
         if self.preferences.listening and all(dialog is None for dialog in
                                               (self.settings_dialog, self.history_dialog, self.macro_dialog,
-                                               self.create_dialog, self.reply_dialog)):
+                                               self.reply_dialog)):
             self.submit_message(message, from_microphone=True)
 
-    def submit_message(self, message, *, from_microphone=False, artifact_request=None):
+    def submit_message(self, message, *, from_microphone=False):
         message = message.strip()
         if self.closing or self.installing_update or self.macro_dialog is not None or self.turn is not None or not message:
             return
         turn = OrbitTurn(next(TURN_IDS), message, preferences=self.preferences,
-                         from_microphone=from_microphone, artifact_request=artifact_request)
+                         from_microphone=from_microphone)
         self.turn = turn
         self.listen_after_stop.stop()
         self.listener.stop()
@@ -301,11 +288,7 @@ class OrbitWindow(QWidget):
         self.last_artifact = None
         if self.reply_dialog is not None:
             self.reply_dialog.close()
-        self.reply.hide()
-        if artifact_request is not None:
-            self.set_state("Creating", "Drafting your file locally", "thinking")
-        else:
-            self.set_state("Thinking", "Processing your request locally", "thinking")
+        self.set_state("Thinking", "Processing your request locally", "thinking")
         self.update_send()
         self.workers.submit(turn)
 
@@ -408,8 +391,6 @@ class OrbitWindow(QWidget):
         self.meter.turn_id = 0
         self.last_reply = turn.answer
         self.last_artifact = turn.artifact
-        self.reply.setText("Review file" if self.last_artifact is not None else "Read reply")
-        self.reply.setVisible(bool(self.last_reply) or self.last_artifact is not None)
         self.set_state("Ready, Maker", turn.notice or self.ready_detail())
         self.update_send()
         self.entry.setFocus()
@@ -458,7 +439,7 @@ class OrbitWindow(QWidget):
     def resume_listener(self):
         if (self.preferences.listening and not self.closing and self.turn is None
                 and all(dialog is None for dialog in (self.settings_dialog, self.history_dialog, self.macro_dialog,
-                                                       self.create_dialog, self.reply_dialog))
+                                                       self.reply_dialog))
                 and QApplication.platformName() == "windows"):
             self.listener.start(self.preferences.name)
 
@@ -467,7 +448,8 @@ class OrbitWindow(QWidget):
         self.setWindowTitle(name)
         self.update_brand()
         self.entry.setAccessibleName(f"Message to {name}")
-        self.entry.setPlaceholderText(f"Message {name}")
+        self.entry.setPlaceholderText(f"Ask {name} anything")
+        self.entry.setToolTip("Ask for a file or reply · Ctrl+R to read the latest reply · Ctrl+H for history")
         self.visual.set_motion_enabled(self.preferences.motion)
         self.notices.pop("microphone", None)
         if self.turn is None:
@@ -488,31 +470,6 @@ class OrbitWindow(QWidget):
                 if tool.text() != text:
                     tool.setText(text)
                     tool.setAccessibleName(label)
-
-    def show_create(self):
-        if self.create_dialog is not None:
-            self.create_dialog.raise_()
-            return
-        if self.turn is not None or self.macro_dialog is not None or self.installing_update:
-            QMessageBox.information(self, "Create with ORBIT", "Finish the current task before starting a new draft.")
-            return
-        from .create_dialog import CreateDialog
-
-        self.listener.stop()
-        dialog = CreateDialog(self)
-        self.create_dialog = dialog
-        dialog.setAttribute(Qt.WidgetAttribute.WA_DeleteOnClose)
-
-        def closed(result):
-            self.create_dialog = None
-            if result == QDialog.DialogCode.Accepted:
-                self.submit_message(dialog.request.prompt, artifact_request=dialog.request)
-            else:
-                self.resume_listener()
-
-        dialog.finished.connect(closed)
-        dialog.open()
-        apply_window_frame(dialog)
 
     def build_update_banner(self):
         banner = QFrame(objectName="UpdateBanner")
@@ -596,7 +553,7 @@ class OrbitWindow(QWidget):
         if self.macro_dialog is not None:
             QMessageBox.information(self, "ORBIT update", "Close the macro recorder before updating.")
             return
-        if self.create_dialog is not None or (self.reply_dialog is not None and self.last_artifact is not None):
+        if self.reply_dialog is not None and self.last_artifact is not None:
             QMessageBox.information(self, "ORBIT update", "Finish reviewing or saving your draft before updating.")
             return
         if self.turn is not None:

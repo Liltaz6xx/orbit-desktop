@@ -1,5 +1,9 @@
 # ORBIT changelog
 
+## 0.8.1
+
+- Create files directly from typed or spoken requests and keep Macros as the only extra composer button.
+
 ## 0.8.0
 
 - Open in borderless fullscreen with glass controls and a live, animated 3D orb.
