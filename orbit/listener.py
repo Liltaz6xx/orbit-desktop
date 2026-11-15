@@ -27,12 +27,18 @@ try {
         $engine.LoadGrammar($wake)
         $engine.LoadGrammar($dictation)
         $engine.SetInputToDefaultAudioDevice()
-        [Console]::WriteLine('READY')
+        $followUp = $env:ORBIT_VOICE_FOLLOW_UP -eq '1'
         while ($true) {
-            $engine.InitialSilenceTimeout = [TimeSpan]::FromSeconds(12)
-            $heard = $engine.Recognize()
-            if ($null -eq $heard -or $heard.Confidence -lt 0.7) { continue }
-            [Console]::WriteLine('WAKE')
+            if ($followUp) {
+                [Console]::WriteLine('FOLLOW_UP')
+            } else {
+                [Console]::WriteLine('READY')
+                $engine.InitialSilenceTimeout = [TimeSpan]::FromSeconds(12)
+                do {
+                    $heard = $engine.Recognize()
+                } while ($null -eq $heard -or $heard.Confidence -lt 0.7)
+                [Console]::WriteLine('WAKE')
+            }
             $wake.Enabled = $false
             $dictation.Enabled = $true
             $engine.InitialSilenceTimeout = [TimeSpan]::FromSeconds(7)
@@ -43,7 +49,7 @@ try {
                 [Console]::WriteLine('TEXT ' + (ConvertTo-Json -InputObject $command.Text -Compress))
                 break
             }
-            [Console]::WriteLine('READY')
+            $followUp = $false
         }
     } finally { $engine.Dispose() }
 } catch { [Console]::WriteLine('FAILED'); exit 1 }
@@ -66,7 +72,7 @@ class VoiceListener(QObject):
         self.reported_error = False
         self.name = ""
 
-    def start(self, name):
+    def start(self, name, *, follow_up=False):
         if self.process.state() != QProcess.ProcessState.NotRunning:
             return
         self.active = True
@@ -80,6 +86,7 @@ class VoiceListener(QObject):
             from PySide6.QtCore import QProcessEnvironment
             environment = QProcessEnvironment.systemEnvironment()
         environment.insert("ORBIT_WAKE_NAME", name)
+        environment.insert("ORBIT_VOICE_FOLLOW_UP", "1" if follow_up else "0")
         self.process.setProcessEnvironment(environment)
         encoded = base64.b64encode(RECOGNIZE.encode("utf-16le")).decode("ascii")
         self.status.emit("Starting the microphone…")
@@ -103,6 +110,8 @@ class VoiceListener(QObject):
                 self.status.emit(f"Microphone on · say “Hey {self.name}”")
             elif line == "WAKE":
                 self.status.emit("Listening for your request…")
+            elif line == "FOLLOW_UP":
+                self.status.emit("Listening for a follow-up…")
             elif line.startswith("TEXT ") and not self.delivered:
                 try:
                     message = json.loads(line[5:])

@@ -1,4 +1,6 @@
-# ORBIT Desktop 0.8.1
+# ORBIT Desktop 0.8.2
+
+Enable **Voice activation** in Settings, then say **Hey ORBIT** or use your chosen assistant name. Wait until ORBIT is listening and say your request. After a spoken exchange, you have about seven seconds to start a follow-up before ORBIT goes back to waiting for the wake phrase.
 
 ORBIT opens in borderless fullscreen with translucent controls and a live 3D orb. The orb rotates when idle, expands while thinking, and reacts to speech. Press **F11** to switch to a normal window. Turn off **Motion** in **Settings** to pause the ambient animation.
 

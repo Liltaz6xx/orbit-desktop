@@ -1,5 +1,9 @@
 # ORBIT changelog
 
+## 0.8.2
+
+- Make voice activation easier to find and listen for hands-free follow-ups after a spoken reply.
+
 ## 0.8.1
 
 - Create files directly from typed or spoken requests and keep Macros as the only extra composer button.

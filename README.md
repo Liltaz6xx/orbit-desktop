@@ -24,6 +24,8 @@ Ask for a Word document, PowerPoint deck, plain-text or Markdown file, study gui
 
 ORBIT checks GitHub on startup and while the app is open. An update banner appears when a newer build is available.
 
+Enable **Voice activation** in Settings and say **Hey ORBIT** or use your chosen assistant name. Wait for the listening indicator, then speak. After a spoken exchange, ORBIT listens for a follow-up for about seven seconds before returning to the wake phrase. Recognition uses the default microphone and an installed English Windows Speech recognizer.
+
 ## Chat history and recorded macros
 
 Press **Ctrl+H** to search saved exchanges. You can copy a selected exchange or clear the conversation archive. Clearing history keeps separately saved facts.

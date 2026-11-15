@@ -115,6 +115,17 @@ class WindowTests(unittest.TestCase):
             self.win.reply_dialog.save()
         self.assertIn("Review the effect of impacts.", output.read_text(encoding="utf-8"))
 
+    def test_spoken_reply_reopens_listening_for_follow_up(self):
+        self.win.preferences = Preferences(listening=True)
+        with patch.object(self.win, "resume_listener") as resume:
+            self.win.submit_spoken("Who made you?")
+            self.until(lambda: self.win.turn is None)
+            resume.assert_called_once_with(follow_up=True)
+            resume.reset_mock()
+            self.send("Who made you?")
+            self.until(lambda: self.win.turn is None)
+            resume.assert_called_once_with(follow_up=False)
+
     def test_immediate_replacement_and_stale_signal_rejection(self):
         entered = threading.Event()
 

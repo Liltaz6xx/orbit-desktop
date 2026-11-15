@@ -288,7 +288,8 @@ class OrbitWindow(QWidget):
         self.last_artifact = None
         if self.reply_dialog is not None:
             self.reply_dialog.close()
-        self.set_state("Thinking", "Processing your request locally", "thinking")
+        self.set_state("Thinking", f"Heard: {message[:160]}" if from_microphone else "Processing your request locally",
+                       "thinking")
         self.update_send()
         self.workers.submit(turn)
 
@@ -305,7 +306,10 @@ class OrbitWindow(QWidget):
             self.detail.setText(self.ready_detail())
 
     def ready_detail(self):
-        return " ".join(self.notices.values())
+        message = " ".join(self.notices.values())
+        if not self.preferences.listening:
+            return (message + " Voice activation is off. Turn it on in Settings.").strip()
+        return message
 
     def on_approval(self, turn_id, approval):
         turn = self.current_turn(turn_id)
@@ -397,7 +401,7 @@ class OrbitWindow(QWidget):
         if self.last_artifact is not None:
             self.show_reply()
         else:
-            self.resume_listener()
+            self.resume_listener(follow_up=turn.from_microphone and bool(turn.answer) and not turn.notice)
 
     def show_reply(self):
         if not self.last_reply and self.last_artifact is None:
@@ -436,12 +440,12 @@ class OrbitWindow(QWidget):
         if QApplication.platformName() == "windows":
             apply_window_frame(dialog)
 
-    def resume_listener(self):
+    def resume_listener(self, *, follow_up=False):
         if (self.preferences.listening and not self.closing and self.turn is None
                 and all(dialog is None for dialog in (self.settings_dialog, self.history_dialog, self.macro_dialog,
                                                        self.reply_dialog))
                 and QApplication.platformName() == "windows"):
-            self.listener.start(self.preferences.name)
+            self.listener.start(self.preferences.name, follow_up=follow_up)
 
     def apply_preferences(self):
         name = self.preferences.name
