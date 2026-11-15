@@ -28,6 +28,8 @@ class SettingsDialog(QDialog):
         self.style.setCurrentText(preferences.style)
         self.listening = QCheckBox("Listen for “Hey” followed by the assistant name")
         self.listening.setChecked(preferences.listening)
+        self.motion = QCheckBox("Animate the orb and background")
+        self.motion.setChecked(preferences.motion)
         self.macros = QPlainTextEdit()
         self.macros.setPlainText("\n".join(
             f"{name} = {' | '.join(commands)}" for name, commands in preferences.macros.items()
@@ -37,6 +39,7 @@ class SettingsDialog(QDialog):
         form.addRow("Voice", self.voice)
         form.addRow("Personality", self.style)
         form.addRow("Microphone", self.listening)
+        form.addRow("Motion", self.motion)
         form.addRow("Command routines", self.macros)
         layout.addLayout(form)
         hint = QLabel("Use | between Windows commands, then say or type “run macro work”. "
@@ -65,7 +68,8 @@ class SettingsDialog(QDialog):
                     raise ValueError("Use a unique name and an equals sign for each macro.")
                 macros[name] = tuple(command.strip() for command in commands.split("|"))
             self.preferences = Preferences(self.name.text().strip(), self.voice.currentData(),
-                                           self.style.currentText(), self.listening.isChecked(), macros)
+                                           self.style.currentText(), self.listening.isChecked(), macros,
+                                           motion=self.motion.isChecked())
             save_preferences(self.preferences)
         except (ValueError, OSError) as exc:
             self.error.setText(str(exc) if isinstance(exc, ValueError) else "Could not save your local settings.")

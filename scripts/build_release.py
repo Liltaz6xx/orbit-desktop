@@ -14,7 +14,7 @@ ROOT_FILES = {
     "README.md", "CHANGELOG.md", "CONTRIBUTING.md", "DEVELOPMENT_GUIDE.md",
     "MODEL_SOURCES.md", "RELEASE_NOTES.md", "LICENSE", "orbit.example.toml",
 }
-ASSETS = {"assets/orbit.ico", "assets/orbit_core.png", "assets/orbit_halo.png",
+ASSETS = {"assets/orbit.ico", "assets/orbit_core.png", "assets/orbit_halo.png", "assets/orbit_aurora.gif",
           "assets/preview.jpg", "assets/VOICE_ASSETS.txt"}
 SCRIPTS = {"scripts/setup.ps1", "scripts/download_voice_models.ps1", "scripts/check_environment.py"}
 

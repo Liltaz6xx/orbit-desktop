@@ -6,6 +6,7 @@ import sqlite3
 
 from .actions import ACTION_TARGETS, fast_action_route, identity_response, unsupported_action_request
 from .ai import OllamaError, OrbitAI
+from .artifacts import ArtifactError, ArtifactRequest, detect_artifact_kind, generate_artifact
 from .memory import MemoryStore, memory_command
 from .models import Approval
 
@@ -28,6 +29,8 @@ class Conversation:
             self.events.subsystem.emit("memory", "Memory unavailable. Check the database path and permissions.")
 
     def answer(self, turn):
+        if turn.artifact_request is not None:
+            return self.prepare_artifact(turn, turn.artifact_request)
         message = turn.message
         name = turn.preferences.name
         if re.fullmatch(r"(?:what(?: is|'s) your name|who are you)[?.! ]*", message, re.I):
@@ -43,6 +46,13 @@ class Conversation:
         macro = re.fullmatch(r"run macro (.+)", " ".join(message.casefold().split()).strip(" .!?"))
         if macro:
             return self.run_macro(turn, macro[1]), "", False
+        kind = detect_artifact_kind(message)
+        if kind is not None:
+            try:
+                request = ArtifactRequest(kind, message)
+            except ArtifactError as exc:
+                return f"I couldn't prepare that file, Maker. {exc}", "", False
+            return self.prepare_artifact(turn, request)
         action = fast_action_route(message)
         if action:
             return self.windows(turn, *action), "", False
@@ -60,6 +70,17 @@ class Conversation:
             turn.speak(reply)
             return reply, str(exc), False
         return reply, notice, True
+
+    def prepare_artifact(self, turn, request):
+        try:
+            turn.artifact = generate_artifact(self.ai.client, request, turn.stop)
+        except (ArtifactError, OllamaError, InterruptedError) as exc:
+            if turn.stop.is_set():
+                return "", "", False
+            return f"I couldn't prepare that file, Maker. {exc}", "", False
+        if turn.stop.is_set() or turn.artifact is None:
+            return "", "", False
+        return "Your draft is ready to review and save, Maker.", "", False
 
     def run_macro(self, turn, name):
         commands = turn.preferences.macros.get(name)

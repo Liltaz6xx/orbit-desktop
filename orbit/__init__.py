@@ -1,3 +1,3 @@
 """ORBIT personal desktop assistant."""
 
-__version__ = "0.7.0-beta.11"
+__version__ = "0.8.0"

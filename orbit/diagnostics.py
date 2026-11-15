@@ -16,6 +16,8 @@ PACKAGES = {
     "psutil": ("psutil",),
     "sounddevice": ("sounddevice",),
     "kokoro-onnx": ("kokoro_onnx", "onnxruntime", "phonemizer"),
+    "python-docx": ("docx",),
+    "python-pptx": ("pptx",),
 }
 
 

@@ -2,7 +2,7 @@
 
 **A voice-first AI assistant for Windows 11.** Type a request and hear ORBIT’s reply in a British voice. The orb animates as ORBIT thinks, speaks and runs approved Windows actions.
 
-![ORBIT's illuminated orbital core against a near-black background](assets/preview.jpg)
+![ORBIT's borderless workspace with a live 3D filament sphere and translucent controls](assets/preview.jpg)
 
 Created by [Liltaz6xx](https://github.com/Liltaz6xx). ORBIT calls the operator of each installation **Maker**.
 
@@ -15,6 +15,14 @@ Created by [Liltaz6xx](https://github.com/Liltaz6xx). ORBIT calls the operator o
 For updates, choose **Update** in the installed app or run the newer Setup EXE. Setup finds the existing installation and replaces its program files. It remembers the desktop shortcut choice. Settings, memories, recordings and downloaded voice files live in the separate ORBIT Desktop profile and survive updates and uninstall.
 
 Setup preserves any custom Ollama address or model selected in your profile. Uninstalling ORBIT leaves Ollama and its model downloads available to other apps.
+
+## Fullscreen and Create
+
+ORBIT starts in borderless fullscreen. Press **F11** to switch between fullscreen and windowed mode. The orb rotates when idle, grows while thinking, and responds to speech. The **Motion** setting pauses the animation.
+
+Choose **Create** or press **Ctrl+N** to generate a Word document, PowerPoint deck, plain-text or Markdown file, study guide, flashcards or quiz. Add a description and optionally attach local notes. ORBIT uses the local model and presents a draft before saving. Use **Save as…** to choose a new file path. Existing files are protected from replacement.
+
+ORBIT checks GitHub on startup and while the app is open. An update banner appears when a newer build is available.
 
 ## Chat history and recorded macros
 

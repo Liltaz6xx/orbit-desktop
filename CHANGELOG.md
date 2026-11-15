@@ -1,5 +1,12 @@
 # ORBIT changelog
 
+## 0.8.0
+
+- Open in borderless fullscreen with glass controls and a live, animated 3D orb.
+- Create PowerPoint decks, Word documents, text files and revision materials with local Ollama.
+- Review generated drafts and choose where to save them.
+- Show an update notice when GitHub has a newer build.
+
 ## 0.7.0-beta.11
 
 - Record and replay keyboard and mouse input from a dedicated Windows macro recorder.

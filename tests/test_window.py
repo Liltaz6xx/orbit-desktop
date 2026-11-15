@@ -101,6 +101,24 @@ class WindowTests(unittest.TestCase):
         self.assertIsNone(self.win.macro_dialog)
         self.assertTrue(self.win.entry.isEnabled())
 
+    def test_created_file_requires_review_and_a_selected_path(self):
+        from orbit.artifacts import Artifact
+
+        output = Path(self.scratch.name) / "draft.md"
+        draft = Artifact("study_guide", "Moon craters", body="Review the effect of impacts.")
+        with patch("orbit.conversation.generate_artifact", return_value=draft) as generate:
+            self.win.show_create()
+            dialog = self.win.create_dialog
+            dialog.kind.setCurrentIndex(dialog.kind.findData("study_guide"))
+            dialog.prompt.setPlainText("Make a guide about Moon craters.")
+            dialog.accept_request()
+            self.until(lambda: self.win.last_artifact is draft and self.win.reply_dialog is not None)
+            self.assertEqual(generate.call_args.args[1].kind, "study_guide")
+        self.assertFalse(output.exists())
+        with patch("orbit.create_dialog.QFileDialog.getSaveFileName", return_value=(str(output), "")):
+            self.win.reply_dialog.save()
+        self.assertIn("Review the effect of impacts.", output.read_text(encoding="utf-8"))
+
     def test_immediate_replacement_and_stale_signal_rejection(self):
         entered = threading.Event()
 

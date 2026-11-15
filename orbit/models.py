@@ -4,10 +4,14 @@ import queue
 import threading
 from dataclasses import dataclass, field
 from time import perf_counter
+from typing import TYPE_CHECKING
 
 from PySide6.QtCore import QObject, Signal
 
 from .preferences import Preferences
+
+if TYPE_CHECKING:
+    from .artifacts import Artifact, ArtifactRequest
 
 
 class OrbitEvents(QObject):
@@ -95,6 +99,8 @@ class OrbitTurn:
     context_revision: int | None = None
     preferences: Preferences = field(default_factory=Preferences)
     from_microphone: bool = False
+    artifact_request: "ArtifactRequest | None" = None
+    artifact: "Artifact | None" = None
 
     def speak(self, phrase):
         return put_until(self.text, phrase, self.stop, self.audio_failed)

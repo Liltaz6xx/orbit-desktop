@@ -34,6 +34,7 @@ class Preferences:
     style: str = "Classic"
     listening: bool = False
     macros: dict[str, tuple[str, ...]] = field(default_factory=dict)
+    motion: bool = True
 
     def __post_init__(self):
         if not isinstance(self.name, str) or not re.fullmatch(r"[A-Za-z][A-Za-z0-9 ]{0,23}", self.name):
@@ -42,7 +43,7 @@ class Preferences:
             raise ValueError("Use a single space between words in the assistant name.")
         if (not isinstance(self.voice, str) or self.voice not in VOICES
                 or not isinstance(self.style, str) or self.style not in STYLES
-                or type(self.listening) is not bool):
+                or type(self.listening) is not bool or type(self.motion) is not bool):
             raise ValueError("Choose a supported voice, personality and microphone setting.")
         if not isinstance(self.macros, dict) or len(self.macros) > 20:
             raise ValueError("You can save up to 20 macros.")

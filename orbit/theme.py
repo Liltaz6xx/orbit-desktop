@@ -2,49 +2,55 @@
 
 import sys
 
-BG = "#0B1017"
-TEXT = "#E9F1F5"
-MUTED = "#A1B0BE"
+BG = "#080711"
+TEXT = "#F4F0FF"
+MUTED = "#BBB4CE"
 
 STYLESHEET = f"""
-    QWidget#Root {{ background: {BG}; color: {TEXT}; }}
-    QFrame#Toolbar {{ background: #111923; border: 1px solid #263544; border-radius: 12px; }}
-    QLabel#Brand {{ color: {TEXT}; font: 650 19px 'Segoe UI'; }}
-    QLabel#Status {{ color: {TEXT}; font: 600 25px 'Segoe UI'; }}
-    QLabel#Detail {{ color: {MUTED}; font: 13px 'Segoe UI'; }}
-    QLabel#Subtitle {{ color: {TEXT}; background: #141F2A; border: 1px solid #34505D;
-        border-radius: 12px; padding: 8px 16px; font: 15px 'Segoe UI'; }}
+    QWidget#Root {{ color: {TEXT}; }}
+    QLabel#Brand {{ color: {TEXT}; font: 650 19px 'Segoe UI Variable'; }}
+    QLabel#Status {{ color: {TEXT}; font: 600 29px 'Segoe UI Variable'; }}
+    QLabel#Detail, QLabel#FormHint {{ color: {MUTED}; font: 13px 'Segoe UI'; }}
+    QLabel#Subtitle {{ color: {TEXT}; background: rgba(38, 32, 60, 194);
+        border: 1px solid rgba(206, 186, 255, 104); border-radius: 15px;
+        padding: 8px 16px; font: 16px 'Segoe UI'; }}
     QLabel#Hint {{ color: {MUTED}; font: 11px 'Segoe UI'; padding: 0 3px; }}
-    QFrame#Composer {{ background: #131C26; border: 1px solid #304151; border-radius: 16px; }}
-    QFrame#Composer[focused="true"] {{ border-color: #69A5A0; }}
     QLineEdit#Entry {{ background: transparent; border: none; color: {TEXT};
-        placeholder-text-color: {MUTED}; font: 15px 'Segoe UI'; selection-background-color: #414B5C; }}
-    QPushButton#Send {{ background: #9FE2D3; border: 1px solid transparent; border-radius: 10px;
-        color: #0A2325; font: 600 13px 'Segoe UI'; padding: 0 16px; }}
-    QPushButton#Send:hover {{ background: #B8F2E5; }}
-    QPushButton#Send:pressed {{ background: #87CDBD; }}
-    QPushButton#Send:focus {{ border-color: #F0F7FA; }}
-    QPushButton#Send:disabled {{ background: #24323E; color: {MUTED}; }}
-    QPushButton#HeaderAction {{ color: {TEXT}; background: #192430; border: 1px solid #324351;
-        border-radius: 7px; padding: 6px 8px; font: 12px 'Segoe UI'; }}
-    QPushButton#HeaderAction:hover {{ background: #243644; }}
-    QPushButton#HeaderAction:focus {{ border-color: #87CDBD; }}
+        placeholder-text-color: #C0B9D3; font: 16px 'Segoe UI'; selection-background-color: #615488; }}
+    QPushButton#Send {{ background: qlineargradient(x1:0,y1:0,x2:1,y2:1,stop:0 #F5EAFE,stop:1 #C4C8FF);
+        border: 1px solid #F1DCFF; border-radius: 14px;
+        color: #25183F; font: 600 13px 'Segoe UI'; padding: 0 16px; }}
+    QPushButton#Send:hover {{ background: #F9ECFF; }}
+    QPushButton#Send:pressed {{ background: #BAB3EC; }}
+    QPushButton#Send:focus {{ border-color: #FFFFFF; }}
+    QPushButton#Send:disabled {{ background: rgba(98, 89, 138, 104); color: #D5CDE7; border-color: transparent; }}
+    QPushButton#HeaderAction, QPushButton#WindowAction {{
+        color: {TEXT}; background: rgba(159, 145, 206, 35);
+        border: 1px solid rgba(225, 208, 255, 65); border-radius: 11px;
+        padding: 5px 8px; font: 12px 'Segoe UI'; }}
+    QPushButton#WindowAction {{ padding: 5px; }}
+    QPushButton#WindowAction:hover, QPushButton#HeaderAction:hover {{ background: rgba(169, 140, 233, 82); }}
+    QPushButton#WindowAction:focus, QPushButton#HeaderAction:focus {{ border-color: #D8C4FF; }}
     QPushButton#HeaderAction:disabled {{ color: {MUTED}; }}
-    QPushButton#Reply {{ color: {TEXT}; background: transparent; border: none;
-        font: 12px 'Segoe UI'; text-decoration: underline; }}
-    QPushButton#Reply:hover, QPushButton#Reply:focus {{ color: white; }}
-    QDialog {{ background: #111923; color: {TEXT}; }}
+    QWidget#UpdateBanner {{ background: #281F46; border: 1px solid #76649D; border-radius: 13px; }}
+    QLabel#UpdateNotice {{ color: #F7EDFF; font: 600 13px 'Segoe UI'; }}
+    QPushButton#UpdateAction {{ background: #DAD0FB; color: #261A42; border: 1px solid #EDE2FF;
+        border-radius: 8px; padding: 5px 10px; font: 600 12px 'Segoe UI'; }}
+    QPushButton#UpdateAction:hover {{ background: #F4E6FF; }}
+    QDialog {{ background: #171327; color: {TEXT}; }}
     QDialog QLabel {{ color: {TEXT}; }}
-    QDialog QPushButton {{ background: #22262D; color: {TEXT};
-        border: 1px solid #3E434D; border-radius: 7px; padding: 6px 18px; }}
-    QDialog QPushButton:hover {{ background: #303640; }}
-    QDialog QPushButton:focus {{ border-color: #7B8494; }}
+    QDialog QLabel#DialogTitle {{ font: 650 22px 'Segoe UI Variable'; }}
+    QDialog QPushButton {{ background: #282139; color: {TEXT};
+        border: 1px solid #554669; border-radius: 9px; padding: 7px 15px; }}
+    QDialog QPushButton:hover {{ background: #3B2C55; }}
+    QDialog QPushButton:focus {{ border-color: #C1A5F2; }}
+    QDialog QPushButton:disabled {{ color: #A39AB3; background: #221C30; }}
     QDialog QLineEdit, QDialog QPlainTextEdit, QDialog QTextEdit, QDialog QComboBox {{
-        background: #0D141D; color: {TEXT}; border: 1px solid #354756;
-        border-radius: 8px; padding: 10px; }}
+        background: #110D20; color: {TEXT}; border: 1px solid #5A4F72;
+        border-radius: 9px; padding: 9px; selection-background-color: #655288; }}
     QDialog QCheckBox {{ color: {TEXT}; }}
-    QDialog QComboBox QAbstractItemView {{ background: #192430; color: {TEXT};
-        selection-background-color: #304A57; }}
+    QDialog QComboBox QAbstractItemView {{ background: #211932; color: {TEXT};
+        selection-background-color: #5F4B83; }}
 """
 
 
@@ -59,7 +65,7 @@ def apply_window_frame(widget):
     except (OSError, AttributeError):
         return
     hwnd = HWND(int(widget.winId()))
-    for attribute, colour in ((34, "#292C32"), (35, BG), (36, TEXT)):
+    for attribute, colour in ((34, "#524061"), (35, BG), (36, TEXT)):
         r, g, b = bytes.fromhex(colour[1:])
         value = DWORD(r | (g << 8) | (b << 16))
         set_attribute(hwnd, DWORD(attribute), byref(value), DWORD(sizeof(value)))

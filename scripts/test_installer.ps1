@@ -107,9 +107,11 @@ MemoryStore(DATABASE_PATH).save_memory("The upgrade preserves this memory")
         $smoke = @'
 from PySide6.QtCore import QTimer
 from PySide6.QtWidgets import QApplication
+from orbit.artifacts import Artifact, Slide, write_document, write_presentation
 from orbit.config import VOICE_MODEL, load_settings, voice_files
 from orbit.voice import OrbitVoice
 from orbit.window import OrbitWindow
+from io import BytesIO
 
 if voice_files()[0].name != VOICE_MODEL:
     raise SystemExit("Setup did not install the new Kokoro model.")
@@ -119,6 +121,18 @@ if not len(samples) or rate != 24000:
 app = QApplication([])
 win = OrbitWindow(load_settings())
 win.show()
+if not win.visual.aurora.isValid():
+    raise SystemExit("Setup did not install the animated orb background.")
+win.show_create()
+win.create_dialog.reject()
+for draft, writer in (
+    (Artifact("word", "Installer smoke test", body="Example text."), write_document),
+    (Artifact("presentation", "Installer smoke test", slides=(Slide("Example", ("Example point.",)),)), write_presentation),
+):
+    output = BytesIO()
+    writer(draft, output)
+    if not output.getvalue().startswith(b"PK"):
+        raise SystemExit("The installed Office exporter did not produce a file.")
 win.show_history()
 win.history_dialog.reject()
 win.show_macros()

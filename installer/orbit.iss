@@ -40,6 +40,7 @@ Source: "..\main.py"; DestDir: "{app}"; Flags: ignoreversion
 Source: "..\orbit\*.py"; DestDir: "{app}\orbit"; Flags: ignoreversion
 Source: "..\assets\orbit_core.png"; DestDir: "{app}\assets"; Flags: ignoreversion
 Source: "..\assets\orbit_halo.png"; DestDir: "{app}\assets"; Flags: ignoreversion
+Source: "..\assets\orbit_aurora.gif"; DestDir: "{app}\assets"; Flags: ignoreversion
 Source: "..\assets\orbit.ico"; DestDir: "{app}\assets"; Flags: ignoreversion
 Source: "..\scripts\download_voice_models.ps1"; DestDir: "{app}\scripts"; Flags: ignoreversion
 Source: "remove_runtime.ps1"; DestDir: "{app}\scripts"; Flags: ignoreversion

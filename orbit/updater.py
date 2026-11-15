@@ -13,6 +13,7 @@ from urllib.request import Request, urlopen
 
 REPOSITORY = "Liltaz6xx/orbit-desktop"
 LATEST = f"https://api.github.com/repos/{REPOSITORY}/releases/latest"
+RELEASE_PAGE = f"https://github.com/{REPOSITORY}/releases/latest"
 MAX_INSTALLER_BYTES = 256 * 1024 * 1024
 
 

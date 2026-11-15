@@ -41,5 +41,19 @@ def action_icon(name):
             line((14, 3), (14, 8), (19, 8))
             line((9, 12), (16, 12))
             line((9, 16), (16, 16))
+        elif name == "create":
+            line((5, 3), (15, 3), (19, 7), (19, 21), (5, 21), (5, 3))
+            line((12, 9), (12, 17))
+            line((8, 13), (16, 13))
+        elif name == "fullscreen":
+            line((3, 9), (3, 3), (9, 3))
+            line((15, 3), (21, 3), (21, 9))
+            line((21, 15), (21, 21), (15, 21))
+            line((9, 21), (3, 21), (3, 15))
+        elif name == "minimize":
+            line((6, 12), (18, 12))
+        elif name == "close":
+            line((7, 7), (17, 17))
+            line((17, 7), (7, 17))
     image.setDevicePixelRatio(2)
     return QIcon(image)

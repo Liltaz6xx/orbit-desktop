@@ -45,7 +45,7 @@ def main() -> int:
     window = OrbitWindow(settings)
     app.aboutToQuit.connect(window.close)
     log.info("event=orbit_started version=%s model=%s", APP_VERSION, settings.model)
-    window.show()
+    window.open_fullscreen()
     return app.exec()
 
 
