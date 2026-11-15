@@ -21,7 +21,7 @@ STATES = {
 class OrbitVisual(QWidget):
     def __init__(self, meter, parent=None):
         super().__init__(parent)
-        self.setMinimumHeight(228)
+        self.setMinimumHeight(155)
         self.setAttribute(Qt.WidgetAttribute.WA_OpaquePaintEvent)
         self.meter = meter
         self.mode = "idle"

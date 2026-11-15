@@ -119,6 +119,12 @@ if not len(samples) or rate != 24000:
 app = QApplication([])
 win = OrbitWindow(load_settings())
 win.show()
+win.show_history()
+win.history_dialog.reject()
+win.show_macros()
+win.macro_dialog.close()
+if win.history_dialog is not None or win.macro_dialog is not None or not win.entry.isEnabled():
+    raise SystemExit("The installed workspace did not close its local tools cleanly.")
 QTimer.singleShot(400, win.close)
 raise SystemExit(app.exec())
 '@

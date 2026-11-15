@@ -1,4 +1,4 @@
-"""Minimal PySide6 interface for typed requests and spoken replies."""
+"""ORBIT desktop workspace for conversation and local tools."""
 
 from itertools import count
 from concurrent.futures import Future
@@ -6,16 +6,17 @@ from threading import Event, Thread
 from time import perf_counter
 import logging
 
-from PySide6.QtCore import QEvent, Qt, QTimer
+from PySide6.QtCore import QEvent, QSize, Qt, QTimer
 from PySide6.QtGui import QKeySequence, QShortcut
 from PySide6.QtWidgets import (
     QApplication, QDialog, QDialogButtonBox, QFrame, QHBoxLayout, QLabel, QLineEdit,
-    QMessageBox, QPushButton, QStyle, QTextEdit, QVBoxLayout, QWidget,
+    QMessageBox, QPushButton, QSizePolicy, QStackedWidget, QTextEdit, QVBoxLayout, QWidget,
 )
 
 from .actions import ActionPermissions, WindowsController
 from .config import APP_VERSION, ROOT, load_settings
 from .discord_presence import APPLICATION_ID, DiscordPresence
+from .icons import action_icon
 from .listener import VoiceListener
 from .models import AudioMeter, OrbitEvents, OrbitTurn
 from .preferences import Preferences, read_preferences
@@ -43,6 +44,9 @@ class OrbitWindow(QWidget):
         self.reply_dialog = None
         self.discord_dialog = None
         self.settings_dialog = None
+        self.history_dialog = None
+        self.macro_dialog = None
+        self.settings = settings if settings is not None else load_settings()
         self.presence = DiscordPresence(self)
         self.notices = {}
         try:
@@ -77,7 +81,10 @@ class OrbitWindow(QWidget):
         self.entry.setFocus()
         self.escape = QShortcut(QKeySequence("Escape"), self)
         self.escape.activated.connect(self.interrupt)
-        self.workers = OrbitWorkers(settings or load_settings(), self.events, self.meter,
+        QShortcut(QKeySequence("Ctrl+H"), self, activated=self.show_history)
+        QShortcut(QKeySequence("Ctrl+Shift+M"), self, activated=self.show_macros)
+        QShortcut(QKeySequence("Ctrl+L"), self, activated=self.entry.setFocus)
+        self.workers = OrbitWorkers(self.settings, self.events, self.meter,
                                     controller if controller is not None else WindowsController(), voice)
         self.workers.start()
         self.apply_preferences()
@@ -94,46 +101,55 @@ class OrbitWindow(QWidget):
 
     def build_ui(self):
         root = QVBoxLayout(self)
-        root.setContentsMargins(30, 22, 30, 19)
+        root.setContentsMargins(24, 18, 24, 18)
         root.setSpacing(0)
-        header = QHBoxLayout()
+        toolbar = QFrame(objectName="Toolbar")
+        header = QHBoxLayout(toolbar)
+        header.setContentsMargins(12, 8, 8, 8)
         self.brand = QLabel("ORBIT", objectName="Brand")
+        self.brand.setTextFormat(Qt.TextFormat.PlainText)
         self.brand.setMinimumWidth(0)
-        header.addWidget(self.brand)
-        header.addStretch()
+        self.brand.setSizePolicy(QSizePolicy.Policy.Ignored, QSizePolicy.Policy.Preferred)
+        header.addWidget(self.brand, 1)
         header.setSpacing(7)
-        settings_button = self.header_button("Settings", QStyle.StandardPixmap.SP_FileDialogDetailedView)
+        settings_button = self.header_button("Settings", "settings")
         settings_button.clicked.connect(self.show_settings)
         header.addWidget(settings_button)
-        discord = self.header_button("Discord", QStyle.StandardPixmap.SP_MessageBoxInformation)
+        discord = self.header_button("Discord", "discord")
         discord.setAccessibleName("Discord activity status")
         discord.clicked.connect(self.show_discord)
         header.addWidget(discord)
-        self.update_button = self.header_button("Update", QStyle.StandardPixmap.SP_BrowserReload)
+        self.update_button = self.header_button("Update", "update")
         self.update_button.clicked.connect(lambda: self.check_for_update(manual=True))
         header.addWidget(self.update_button)
-        header.addSpacing(14)
-        header.addWidget(QLabel(f"v{APP_VERSION}", objectName="Version"))
-        root.addLayout(header)
+        root.addWidget(toolbar)
 
         self.visual = OrbitVisual(self.meter, self)
         root.addWidget(self.visual, 1)
         self.status = QLabel("Ready, Maker", objectName="Status")
         self.status.setAlignment(Qt.AlignmentFlag.AlignCenter)
         root.addWidget(self.status)
-        root.addSpacing(5)
+        root.addSpacing(7)
+        self.speech_panel = QStackedWidget()
+        self.speech_panel.setMaximumWidth(720)
+        self.speech_panel.setMinimumHeight(54)
+        self.speech_panel.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Preferred)
         self.detail = QLabel(objectName="Detail")
+        self.detail.setTextFormat(Qt.TextFormat.PlainText)
         self.detail.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.detail.setWordWrap(True)
-        self.detail.setMinimumHeight(32)
-        root.addWidget(self.detail)
+        self.speech_panel.addWidget(self.detail)
         self.subtitle = QLabel(objectName="Subtitle")
         self.subtitle.setTextFormat(Qt.TextFormat.PlainText)
         self.subtitle.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.subtitle.setWordWrap(True)
-        self.subtitle.hide()
-        root.addWidget(self.subtitle)
-        root.addSpacing(14)
+        self.speech_panel.addWidget(self.subtitle)
+        speech_row = QHBoxLayout()
+        speech_row.addStretch()
+        speech_row.addWidget(self.speech_panel, 24)
+        speech_row.addStretch()
+        root.addLayout(speech_row)
+        root.addSpacing(12)
 
         composer_area = QHBoxLayout()
         composer_area.addStretch()
@@ -151,9 +167,10 @@ class OrbitWindow(QWidget):
         self.entry.installEventFilter(self)
         self.entry.returnPressed.connect(self.send_message)
         self.entry.textChanged.connect(self.update_send)
+        self.brand.installEventFilter(self)
         self.send = QPushButton("Send", objectName="Send")
         self.send.setFixedHeight(40)
-        self.send.setMinimumWidth(76)
+        self.send.setMinimumWidth(84)
         self.send.setCursor(Qt.CursorShape.PointingHandCursor)
         self.send.clicked.connect(self.send_or_stop)
         row.addWidget(self.entry, 1)
@@ -164,19 +181,26 @@ class OrbitWindow(QWidget):
         root.addSpacing(8)
 
         footer = QHBoxLayout()
+        footer.setSpacing(7)
         self.hint = QLabel("Enter to send", objectName="Hint")
-        self.reply = QPushButton("Read reply", objectName="Reply")
-        self.reply.setCursor(Qt.CursorShape.PointingHandCursor)
+        history = self.header_button("History", "history")
+        history.setToolTip("Chat history · Ctrl+H")
+        history.clicked.connect(self.show_history)
+        macros = self.header_button("Macros", "macros")
+        macros.setToolTip("Record and replay macros · Ctrl+Shift+M")
+        macros.clicked.connect(self.show_macros)
+        self.reply = self.header_button("Read reply", "reply")
         self.reply.clicked.connect(self.show_reply)
         self.reply.hide()
-        footer.addWidget(self.hint)
+        footer.addWidget(history)
+        footer.addWidget(macros)
         footer.addStretch()
+        footer.addWidget(self.hint)
         footer.addWidget(self.reply)
         footer_widget = QWidget()
         footer_widget.setLayout(footer)
-        footer.setContentsMargins(4, 0, 4, 0)
+        footer.setContentsMargins(0, 0, 0, 0)
         footer_widget.setMaximumWidth(644)
-        footer_widget.setFixedHeight(21)
         footer_area = QHBoxLayout()
         footer_area.addStretch()
         footer_area.addWidget(footer_widget, 24)
@@ -185,11 +209,14 @@ class OrbitWindow(QWidget):
         self.update_send()
 
     def header_button(self, label, icon):
-        button = QPushButton(self.style().standardIcon(icon), label, objectName="HeaderAction")
+        button = QPushButton(action_icon(icon), label, objectName="HeaderAction")
         button.setCursor(Qt.CursorShape.PointingHandCursor)
+        button.setIconSize(QSize(15, 15))
         return button
 
     def eventFilter(self, watched, event):
+        if watched is self.brand and event.type() == QEvent.Type.Resize:
+            self.update_brand()
         if watched is self.entry and event.type() in (QEvent.Type.FocusIn, QEvent.Type.FocusOut):
             self.composer.setProperty("focused", event.type() == QEvent.Type.FocusIn)
             self.composer.style().unpolish(self.composer)
@@ -218,12 +245,13 @@ class OrbitWindow(QWidget):
         self.submit_message(self.entry.text())
 
     def submit_spoken(self, message):
-        if self.preferences.listening and self.settings_dialog is None:
+        if self.preferences.listening and all(dialog is None for dialog in
+                                              (self.settings_dialog, self.history_dialog, self.macro_dialog)):
             self.submit_message(message, from_microphone=True)
 
     def submit_message(self, message, *, from_microphone=False):
         message = message.strip()
-        if self.closing or self.installing_update or self.turn is not None or not message:
+        if self.closing or self.installing_update or self.macro_dialog is not None or self.turn is not None or not message:
             return
         turn = OrbitTurn(next(TURN_IDS), message, preferences=self.preferences, from_microphone=from_microphone)
         self.turn = turn
@@ -308,14 +336,14 @@ class OrbitWindow(QWidget):
         turn = self.current_turn(turn_id)
         if turn is not None and not turn.played:
             self.subtitle.setText(text)
-            self.subtitle.show()
+            self.speech_panel.setCurrentWidget(self.subtitle)
 
     def on_speech_finished(self, turn_id, _backend, error):
         turn = self.current_turn(turn_id)
         if turn is not None:
             turn.played = True
             self.subtitle.clear()
-            self.subtitle.hide()
+            self.speech_panel.setCurrentWidget(self.detail)
             if error:
                 turn.notice = error
             self.maybe_finish(turn)
@@ -327,6 +355,8 @@ class OrbitWindow(QWidget):
             if warning:
                 turn.notice = warning
             self.maybe_finish(turn)
+            if self.history_dialog is not None:
+                self.history_dialog.refresh()
 
     def maybe_finish(self, turn):
         if not turn.generated or not turn.played or turn.persist:
@@ -369,20 +399,25 @@ class OrbitWindow(QWidget):
 
     def resume_listener(self):
         if (self.preferences.listening and not self.closing and self.turn is None
-                and self.settings_dialog is None and QApplication.platformName() == "windows"):
+                and self.settings_dialog is None and self.history_dialog is None and self.macro_dialog is None
+                and QApplication.platformName() == "windows"):
             self.listener.start(self.preferences.name)
 
     def apply_preferences(self):
         name = self.preferences.name
         self.setWindowTitle(name)
-        self.brand.setToolTip(name)
-        self.brand.setText(self.brand.fontMetrics().elidedText(name, Qt.TextElideMode.ElideRight, 108))
+        self.update_brand()
         self.entry.setAccessibleName(f"Message to {name}")
         self.entry.setPlaceholderText(f"Message {name}")
         self.notices.pop("microphone", None)
         if self.turn is None:
             self.detail.setText(self.ready_detail())
         self.resume_listener()
+
+    def update_brand(self):
+        name = self.preferences.name
+        self.brand.setToolTip(f"{name} · ORBIT Desktop {APP_VERSION}")
+        self.brand.setText(self.brand.fontMetrics().elidedText(name, Qt.TextElideMode.ElideRight, self.brand.width()))
 
     def start_update_job(self, label, function, finished):
         future = Future()
@@ -436,6 +471,9 @@ class OrbitWindow(QWidget):
 
     def confirm_update(self, update):
         yes = QMessageBox.StandardButton.Yes
+        if self.macro_dialog is not None:
+            QMessageBox.information(self, "ORBIT update", "Close the macro recorder before updating.")
+            return
         if self.turn is not None:
             QMessageBox.information(self, "ORBIT update", "Finish or stop the current request to update.")
             return
@@ -462,7 +500,58 @@ class OrbitWindow(QWidget):
         self.installing_update = True
         self.start_update_job("Downloading…", lambda: download_update(update, self.update_cancel), ready)
 
+    def show_history(self):
+        from .history_dialog import HistoryDialog
+
+        if self.macro_dialog is not None:
+            if self.macro_dialog.isVisible():
+                self.macro_dialog.raise_()
+            return
+        if self.history_dialog is not None:
+            self.history_dialog.raise_()
+            self.history_dialog.activateWindow()
+            return
+        self.listener.stop()
+        dialog = HistoryDialog(self.settings.database_path, parent=self)
+        self.history_dialog = dialog
+        dialog.setAttribute(Qt.WidgetAttribute.WA_DeleteOnClose)
+        dialog.finished.connect(lambda: self.close_tool("history_dialog"))
+        dialog.open()
+        apply_window_frame(dialog)
+
+    def show_macros(self):
+        from .macro_dialog import MacroDialog
+
+        if self.macro_dialog is not None:
+            if self.macro_dialog.isVisible():
+                self.macro_dialog.raise_()
+                self.macro_dialog.activateWindow()
+            return
+        if self.turn is not None or self.installing_update:
+            QMessageBox.information(self, "Macros", "Finish or stop the current request before opening the recorder.")
+            return
+        self.listener.stop()
+        dialog = MacroDialog(self)
+        self.macro_dialog = dialog
+        dialog.setAttribute(Qt.WidgetAttribute.WA_DeleteOnClose)
+        dialog.finished.connect(lambda: self.close_tool("macro_dialog"))
+        self.entry.setEnabled(False)
+        self.send.setEnabled(False)
+        dialog.show()
+        apply_window_frame(dialog)
+
+    def close_tool(self, name):
+        setattr(self, name, None)
+        if name == "macro_dialog":
+            self.entry.setEnabled(True)
+            self.update_send()
+        self.resume_listener()
+
     def show_settings(self):
+        if self.macro_dialog is not None:
+            if self.macro_dialog.isVisible():
+                self.macro_dialog.raise_()
+            return
         if self.settings_dialog is not None:
             self.settings_dialog.raise_()
             return
@@ -480,6 +569,7 @@ class OrbitWindow(QWidget):
 
         dialog.finished.connect(closed)
         dialog.open()
+        apply_window_frame(dialog)
 
     def show_discord(self):
         if self.discord_dialog is not None:
@@ -518,7 +608,7 @@ class OrbitWindow(QWidget):
             return
         self.turn = None
         self.subtitle.clear()
-        self.subtitle.hide()
+        self.speech_panel.setCurrentWidget(self.detail)
         if self.approval_dialog is not None:
             self.approval_dialog.reject()
         self.meter.turn_id = 0
@@ -533,6 +623,8 @@ class OrbitWindow(QWidget):
         self.update_checks.stop()
         self.update_poll.stop()
         self.update_cancel.set()
+        if self.macro_dialog is not None:
+            self.macro_dialog.close()
         self.listen_after_stop.stop()
         self.listener.stop()
         self.presence.stop()

@@ -2,45 +2,49 @@
 
 import sys
 
-BG = "#08090B"
-TEXT = "#F0F2F5"
-MUTED = "#9B9FA7"
+BG = "#0B1017"
+TEXT = "#E9F1F5"
+MUTED = "#A1B0BE"
 
 STYLESHEET = f"""
     QWidget#Root {{ background: {BG}; color: {TEXT}; }}
-    QLabel#Brand {{ color: {TEXT}; font: 600 14px 'Segoe UI'; }}
-    QLabel#Version {{ color: {MUTED}; font: 11px 'Segoe UI'; }}
-    QLabel#Status {{ color: {TEXT}; font: 600 15px 'Segoe UI'; }}
-    QLabel#Detail {{ color: {MUTED}; font: 12px 'Segoe UI'; }}
-    QLabel#Subtitle {{ color: {TEXT}; background: #15181D; border: 1px solid #2A2D34;
-        border-radius: 10px; padding: 8px 14px; font: 15px 'Segoe UI'; }}
-    QLabel#Hint {{ color: {MUTED}; font: 11px 'Segoe UI'; }}
-    QFrame#Composer {{ background: #121418; border: 1px solid #2A2D34; border-radius: 22px; }}
-    QFrame#Composer[focused="true"] {{ border-color: #616872; }}
+    QFrame#Toolbar {{ background: #111923; border: 1px solid #263544; border-radius: 12px; }}
+    QLabel#Brand {{ color: {TEXT}; font: 650 19px 'Segoe UI'; }}
+    QLabel#Status {{ color: {TEXT}; font: 600 25px 'Segoe UI'; }}
+    QLabel#Detail {{ color: {MUTED}; font: 13px 'Segoe UI'; }}
+    QLabel#Subtitle {{ color: {TEXT}; background: #141F2A; border: 1px solid #34505D;
+        border-radius: 12px; padding: 8px 16px; font: 15px 'Segoe UI'; }}
+    QLabel#Hint {{ color: {MUTED}; font: 11px 'Segoe UI'; padding: 0 3px; }}
+    QFrame#Composer {{ background: #131C26; border: 1px solid #304151; border-radius: 16px; }}
+    QFrame#Composer[focused="true"] {{ border-color: #69A5A0; }}
     QLineEdit#Entry {{ background: transparent; border: none; color: {TEXT};
         placeholder-text-color: {MUTED}; font: 15px 'Segoe UI'; selection-background-color: #414B5C; }}
-    QPushButton#Send {{ background: #E9EDF2; border: 1px solid transparent; border-radius: 16px;
-        color: #111317; font: 600 13px 'Segoe UI'; padding: 0 16px; }}
-    QPushButton#Send:hover {{ background: #FFFFFF; }}
-    QPushButton#Send:pressed {{ background: #C4CAD3; }}
-    QPushButton#Send:focus {{ border-color: #666D78; }}
-    QPushButton#Send:disabled {{ background: #212429; color: {MUTED}; }}
-    QPushButton#HeaderAction {{ color: {TEXT}; background: #15181D; border: 1px solid #353942;
-        border-radius: 7px; padding: 5px 8px; font: 12px 'Segoe UI'; }}
-    QPushButton#HeaderAction:hover {{ background: #272C34; }}
-    QPushButton#HeaderAction:focus {{ border-color: #7B8494; }}
+    QPushButton#Send {{ background: #9FE2D3; border: 1px solid transparent; border-radius: 10px;
+        color: #0A2325; font: 600 13px 'Segoe UI'; padding: 0 16px; }}
+    QPushButton#Send:hover {{ background: #B8F2E5; }}
+    QPushButton#Send:pressed {{ background: #87CDBD; }}
+    QPushButton#Send:focus {{ border-color: #F0F7FA; }}
+    QPushButton#Send:disabled {{ background: #24323E; color: {MUTED}; }}
+    QPushButton#HeaderAction {{ color: {TEXT}; background: #192430; border: 1px solid #324351;
+        border-radius: 7px; padding: 6px 8px; font: 12px 'Segoe UI'; }}
+    QPushButton#HeaderAction:hover {{ background: #243644; }}
+    QPushButton#HeaderAction:focus {{ border-color: #87CDBD; }}
     QPushButton#HeaderAction:disabled {{ color: {MUTED}; }}
     QPushButton#Reply {{ color: {TEXT}; background: transparent; border: none;
         font: 12px 'Segoe UI'; text-decoration: underline; }}
     QPushButton#Reply:hover, QPushButton#Reply:focus {{ color: white; }}
-    QDialog {{ background: #14161A; color: {TEXT}; }}
+    QDialog {{ background: #111923; color: {TEXT}; }}
     QDialog QLabel {{ color: {TEXT}; }}
     QDialog QPushButton {{ background: #22262D; color: {TEXT};
         border: 1px solid #3E434D; border-radius: 7px; padding: 6px 18px; }}
     QDialog QPushButton:hover {{ background: #303640; }}
     QDialog QPushButton:focus {{ border-color: #7B8494; }}
-    QDialog QTextEdit {{ background: #0C0E11; color: {TEXT}; border: 1px solid #333842;
+    QDialog QLineEdit, QDialog QPlainTextEdit, QDialog QTextEdit, QDialog QComboBox {{
+        background: #0D141D; color: {TEXT}; border: 1px solid #354756;
         border-radius: 8px; padding: 10px; }}
+    QDialog QCheckBox {{ color: {TEXT}; }}
+    QDialog QComboBox QAbstractItemView {{ background: #192430; color: {TEXT};
+        selection-background-color: #304A57; }}
 """
 
 

@@ -12,9 +12,17 @@ Created by [Liltaz6xx](https://github.com/Liltaz6xx). ORBIT calls the operator o
 2. Run Setup. It installs for your Windows account in %LOCALAPPDATA%\Programs\ORBIT Desktop and sets up Python, Ollama, Qwen2.5 1.5B, and the Kokoro voice. A fresh setup needs internet and downloads about 3 GB. Setup reuses existing dependencies and verified voice files. [Ollama for Windows](https://docs.ollama.com/windows) · [Default model](https://ollama.com/library/qwen2.5:1.5b)
 3. Open **ORBIT Desktop** from the Start menu or the optional desktop shortcut, which is checked on a fresh install. Press **Enter** to send, **Esc** to stop, or **Read reply** to open the latest answer.
 
-For updates, download and run the newer Setup EXE. Setup finds the existing installation and replaces its program files. It remembers the desktop shortcut choice. Settings, memories and downloaded voice files live in the separate ORBIT Desktop profile and survive updates and uninstall.
+For updates, choose **Update** in the installed app or run the newer Setup EXE. Setup finds the existing installation and replaces its program files. It remembers the desktop shortcut choice. Settings, memories, recordings and downloaded voice files live in the separate ORBIT Desktop profile and survive updates and uninstall.
 
 Setup preserves any custom Ollama address or model selected in your profile. Uninstalling ORBIT leaves Ollama and its model downloads available to other apps.
+
+## Chat history and recorded macros
+
+Open **History** or press **Ctrl+H** to search saved exchanges. You can copy a selected exchange or clear the conversation archive. Clearing history keeps separately saved facts.
+
+Open **Macros** or press **Ctrl+Shift+M**, choose **New recording**, then switch to the app you want to record during the countdown. Perform your steps and press **F8** to stop. Name and save the recording. To replay it, choose it from the list, confirm **Replay**, and switch to the target app before the countdown ends. Press **F8** to stop replay.
+
+Recordings store keyboard and mouse input on your PC, including typed keys. Leave passwords and other sensitive inputs out. Replay follows the original timing and desktop coordinates, so keep the target window and displays arranged the same way. Windows can block replay into elevated apps or protected screens. Command routines are still available in **Settings**.
 
 ## Share your activity on Discord
 

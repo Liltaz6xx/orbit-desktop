@@ -1,5 +1,11 @@
 # ORBIT changelog
 
+## 0.7.0-beta.11
+
+- Record and replay keyboard and mouse input from a dedicated Windows macro recorder.
+- Search, copy and clear local chat history without another inference request.
+- Refresh the desktop layout, icons and subtitles for small and large windows.
+
 ## 0.7.0-beta.10
 
 - Separate the header buttons and add icons.

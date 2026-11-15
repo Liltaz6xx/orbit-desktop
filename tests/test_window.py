@@ -75,6 +75,32 @@ class WindowTests(unittest.TestCase):
         self.assertFalse(self.win.visual.grab().isNull())
         self.assertLessEqual(self.win.composer.width(), 644)
 
+    def test_local_tools_and_subtitle_at_compact_size(self):
+        from orbit.input_macros import InputMacroStore
+        from orbit.models import OrbitTurn
+
+        self.win.resize(480, 460)
+        self.win.turn = OrbitTurn(999, "Example")
+        self.win.on_caption(999, "This phrase is being spoken.")
+        self.app.processEvents()
+        self.assertTrue(self.win.subtitle.isVisible())
+        self.assertLess(self.win.visual.geometry().bottom(), self.win.status.geometry().top())
+        self.win.interrupt()
+        self.assertFalse(self.win.subtitle.isVisible())
+        self.win.on_caption(999, "Cancelled audio")
+        self.assertFalse(self.win.subtitle.isVisible())
+
+        self.win.show_history()
+        self.win.history_dialog.reject()
+        self.assertIsNone(self.win.history_dialog)
+        store = InputMacroStore(Path(self.scratch.name) / "recordings.db")
+        with patch("orbit.macro_dialog.InputMacroStore", return_value=store):
+            self.win.show_macros()
+        self.assertFalse(self.win.entry.isEnabled())
+        self.win.macro_dialog.close()
+        self.assertIsNone(self.win.macro_dialog)
+        self.assertTrue(self.win.entry.isEnabled())
+
     def test_immediate_replacement_and_stale_signal_rejection(self):
         entered = threading.Event()
 

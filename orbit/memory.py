@@ -239,6 +239,34 @@ class MemoryStore:
             ).fetchall()
         return [dict(row) for row in reversed(rows)]
 
+    @staticmethod
+    def history_page(path, query="", *, before=None, limit=41):
+        """Read the archive with a separate read-only connection."""
+        address = path.resolve().as_uri() + "?mode=ro"
+        try:
+            db = sqlite3.connect(address, uri=True, timeout=0.15)
+        except sqlite3.OperationalError:
+            if not path.exists():
+                return []
+            raise
+        try:
+            db.row_factory = sqlite3.Row
+            conditions, values = [], []
+            if before is not None:
+                conditions.append("id < ?")
+                values.append(before)
+            if query:
+                db.create_function("fold", 1, str.casefold, deterministic=True)
+                conditions.append("(instr(fold(user_text), ?) OR instr(fold(assistant_text), ?))")
+                values.extend((query.casefold(), query.casefold()))
+            where = " WHERE " + " AND ".join(conditions) if conditions else ""
+            return [dict(row) for row in db.execute(
+                "SELECT id, user_text, assistant_text, created_at FROM conversations"
+                + where + " ORDER BY id DESC LIMIT ?", (*values, limit),
+            )]
+        finally:
+            db.close()
+
     def conversation_count(self):
         with self.connection() as db:
             return int(db.execute("SELECT COUNT(*) FROM conversations").fetchone()[0])
